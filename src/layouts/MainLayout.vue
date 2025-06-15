@@ -1,6 +1,6 @@
 <template>
-  <q-layout view="lHh Lpr lFf ">
-    <q-header>
+  <q-layout view="hHh lpR fFf ">
+    <!-- <q-header>
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
@@ -8,14 +8,57 @@
 
         <div>Quasar v{{ $q.version }}</div>
       </q-toolbar>
-    </q-header>
+    </q-header> -->
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+    <q-drawer
+      v-model="leftDrawerOpen"
+      :mini="miniState"
+      @mouseenter="miniState = false"
+      @mouseleave="miniState = true"
+      show-if-above
+      bordered
+      class="bg-primary text-white"
+    >
+      <!-- Top image with responsive height -->
+      <q-img
+        class="absolute-top"
+        src="/public/images/p_photo_1.png"
+        :style="
+          miniState
+            ? 'height: 80px; transition: height 0.3s;'
+            : 'height: 150px; transition: height 0.3s;'
+        "
+      >
+        <!-- Avatar and name area -->
+        <div class="absolute-bottom bg-transparent text-white text-center q-pa-sm">
+          <q-avatar
+            :size="miniState ? '32px' : '56px'"
+            class="q-mb-xs"
+            style="transition: all 0.3s"
+          >
+            <img :src="authStore.profile?.photoURL ?? 'https://cdn.quasar.dev/img/avatar.png'" />
+          </q-avatar>
 
-        <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
-      </q-list>
+          <!-- Only show name when not mini -->
+          <div v-if="!miniState" class="glass-info">
+            <div class="text-weight-bold">{{ authStore.profile?.displayName }}</div>
+            <div class="text-subtitle2">{{ authStore.profile?.email }}</div>
+          </div>
+        </div>
+      </q-img>
+
+      <!-- Scrollable nav list -->
+      <q-scroll-area
+        :style="
+          miniState
+            ? 'height: calc(100% - 80px); margin-top: 80px;'
+            : 'height: calc(100% - 150px); margin-top: 150px;'
+        "
+      >
+        <q-list>
+          <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
 
     <q-page-container style="background-color: #f5f1e9">
@@ -27,55 +70,81 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
+import { useAuthStore } from 'src/modules/auth/store';
+const authStore = useAuthStore();
 
+const miniState = ref(true);
 const linksList: EssentialLinkProps[] = [
   {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
+    title: 'Dashboard',
+    caption: 'Overview & quick actions',
+    icon: 'dashboard',
+    link: '/dashboard',
   },
   {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
+    title: 'Trip',
+    caption: 'Manage your trips',
+    icon: 'card_travel',
+    link: '/trip',
   },
   {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
+    title: 'Itinerary',
+    caption: 'Plan your trip day-by-day',
+    icon: 'event_note',
+    link: '/itinerary',
   },
   {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
+    title: 'Packing',
+    caption: 'Prepare your packing list',
+    icon: 'checklist',
+    link: '/packing',
   },
   {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
+    title: 'Tasks',
+    caption: 'To-do and planning tasks',
+    icon: 'task',
+    link: '/tasks',
   },
   {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
+    title: 'Budget',
+    caption: 'Expenses and cost tracking',
+    icon: 'attach_money',
+    link: '/budget',
   },
   {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev',
+    title: 'Maps',
+    caption: 'View routes and places',
+    icon: 'map',
+    link: '/maps',
+  },
+  {
+    title: 'Chat',
+    caption: 'Group communication',
+    icon: 'forum',
+    link: '/chat',
+  },
+  {
+    title: 'Logout',
+    caption: 'Sign out of your account',
+    icon: 'logout',
+    link: '/logout',
   },
 ];
 
 const leftDrawerOpen = ref(false);
 
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-}
+// function toggleLeftDrawer() {
+//   leftDrawerOpen.value = !leftDrawerOpen.value;
+// }
 </script>
+
+<style scoped>
+.glass-info {
+  background: rgba(255, 255, 255, 0.1); /* light transparent white */
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* for Safari */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+</style>

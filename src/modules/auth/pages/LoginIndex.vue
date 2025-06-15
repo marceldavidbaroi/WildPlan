@@ -24,7 +24,9 @@ import FormLogin from '../components/FormLogin.vue';
 import { ref } from 'vue';
 import { useAuthStore } from '../store';
 import NotifyMessage from 'src/components/NotifyMessage.vue';
+import { useRouter } from 'vue-router';
 const authStore = useAuthStore();
+const router = useRouter();
 
 const email = ref('');
 const password = ref('');
@@ -60,6 +62,9 @@ const handleSocialLogin = async () => {
   notifySuccess.value = response.success;
   notifyMessage.value = response.message;
   showNotify.value = true;
+  if (response.success) {
+    await router.push({ name: 'dashboard' });
+  }
   // you can now call your Firebase or OAuth method here
 };
 </script>
