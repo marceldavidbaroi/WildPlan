@@ -6,6 +6,8 @@ export const useTripStore = defineStore('trips', {
   state: (): TripState => ({
     trips: [],
     activeTrip: null,
+    loading: false,
+    error: null,
   }),
 
   actions: { ...actionFns },

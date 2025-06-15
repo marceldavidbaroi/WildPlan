@@ -1,3 +1,4 @@
+import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import {
   collection,
   doc,
@@ -9,42 +10,105 @@ import {
   serverTimestamp,
   where,
   query,
+  FirestoreError,
+  limit,
+  orderBy,
+  startAfter,
 } from 'firebase/firestore';
 import { db } from 'src/boot/firebase';
 
-import type { Trip } from '../store/types';
+import type {
+  Trip,
+  ServiceResponse,
+  TripCreateData,
+  FetchTripsOptions,
+  PaginatedTripsResponse,
+} from '../store/types'; // Make sure this path is correct
 
 const tripsCollection = collection(db, 'trips');
 
-// 🔹 Create Trip
-export async function createTrip(tripData: Trip) {
+// --- Helper for consistent error handling ---
+function handleServiceError<T>(functionName: string, error: unknown): ServiceResponse<T> {
+  console.error(`[TripsService.${functionName}] Error:`, error);
+  let errorMessage = `Failed to ${functionName.replace('fetch', 'load').replace('Trip', 'trip')}. Please try again.`;
+  let errorCode: string | undefined;
+  let errorDetails: string | undefined;
+
+  if (error instanceof FirestoreError) {
+    errorMessage = `Firestore Error: ${error.message}`;
+    errorCode = error.code;
+    if (error.code === 'permission-denied') {
+      errorMessage = 'Permission denied. You are not authorized to perform this action.';
+    } else if (error.code === 'unavailable') {
+      errorMessage = 'Network issue. Please check your internet connection.';
+    } else if (error.code === 'not-found') {
+      errorMessage = 'Document not found.';
+    }
+    errorDetails = error.message; // Fix for no-base-to-string
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
+    errorDetails = error.message; // Fix for no-base-to-string
+  } else {
+    errorDetails = String(error);
+  }
+
+  return {
+    success: false,
+    data: undefined, // Always undefined for failed ServiceResponse
+    message: errorMessage,
+    errorCode: errorCode,
+    errorDetails: errorDetails,
+  };
+}
+
+// --- Service Functions ---
+
+/**
+ * Creates a new trip document in Firestore.
+ * Calculates 'involvedUsers' from 'createdBy' and 'members' before saving.
+ * @param tripData The data for the new trip (without ID or timestamps).
+ * @returns A ServiceResponse containing the newly created Trip object.
+ */
+export async function createTrip(tripData: TripCreateData): Promise<ServiceResponse<Trip>> {
   try {
-    const newTripDocRef = doc(tripsCollection); // Auto-generated ID
-    const tripWithMeta = {
+    const newTripDocRef = doc(tripsCollection);
+    const clientSideTimestamp = Date.now();
+
+    const involvedUsers = [...new Set([tripData.createdBy, ...tripData.members])];
+
+    const tripToSave = {
       ...tripData,
+      involvedUsers: involvedUsers,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    await setDoc(newTripDocRef, tripWithMeta);
+    await setDoc(newTripDocRef, tripToSave);
+
+    const returnedTrip: Trip = {
+      id: newTripDocRef.id,
+      ...tripData,
+      involvedUsers: involvedUsers,
+      createdAt: clientSideTimestamp,
+      updatedAt: clientSideTimestamp,
+    };
 
     return {
       success: true,
-      data: { id: newTripDocRef.id, ...tripData },
-      message: 'Trip created successfully',
+      data: returnedTrip,
+      message: 'Trip created successfully!',
     };
-  } catch (error) {
-    console.error('[createTrip] Error:', error);
-    return {
-      success: false,
-      data: null,
-      message: 'Failed to create trip',
-    };
+  } catch (error: unknown) {
+    return handleServiceError<Trip>('createTrip', error); // Pass the generic type argument
   }
 }
 
-// 🔹 Fetch Trip by ID
-export async function fetchTrip(tripId: string) {
+/**
+ * Fetches a single trip by its ID.
+ * @param tripId The ID of the trip to fetch.
+ * @returns A ServiceResponse containing the Trip object or undefined if not found/error.
+ */
+export async function fetchTrip(tripId: string): Promise<ServiceResponse<Trip>> {
   try {
     const tripDocRef = doc(tripsCollection, tripId);
     const snap = await getDoc(tripDocRef);
@@ -52,30 +116,44 @@ export async function fetchTrip(tripId: string) {
     if (!snap.exists()) {
       return {
         success: false,
-        data: null,
+        data: undefined,
         message: 'Trip not found',
+        errorCode: 'NOT_FOUND',
       };
     }
 
+    const trip = { id: snap.id, ...snap.data() } as Trip;
+
     return {
       success: true,
-      data: snap.data() as Trip,
+      data: trip,
       message: 'Trip fetched successfully',
     };
-  } catch (error) {
-    console.error('[fetchTrip] Error:', error);
-    return {
-      success: false,
-      data: null,
-      message: 'Failed to fetch trip',
-    };
+  } catch (error: unknown) {
+    return handleServiceError<Trip>('fetchTrip', error); // Pass the generic type argument
   }
 }
 
-// 🔹 Update Trip
-export async function updateTrip(tripId: string, tripData: Partial<Trip>) {
+/**
+ * Updates an existing trip document.
+ * IMPORTANT: If 'createdBy' or 'members' are updated via this function,
+ * 'involvedUsers' must also be re-calculated to maintain data integrity.
+ * This is most robustly handled by a Cloud Function onUpdate trigger.
+ * If done client-side, ensure `updateData` for `involvedUsers` is also calculated.
+ * @param tripId The ID of the trip to update.
+ * @param tripData The partial data to update.
+ * @returns A ServiceResponse indicating success or failure.
+ */
+export async function updateTrip(
+  tripId: string,
+  tripData: Partial<TripCreateData>,
+): Promise<ServiceResponse<void>> {
   try {
     const tripDocRef = doc(tripsCollection, tripId);
+
+    // If you enable the commented-out logic below, ensure you fetch the existing trip
+    // and recalculate `involvedUsers` correctly when `members` or `createdBy` change.
+    // For now, it just updates the provided fields.
     await updateDoc(tripDocRef, {
       ...tripData,
       updatedAt: serverTimestamp(),
@@ -83,90 +161,106 @@ export async function updateTrip(tripId: string, tripData: Partial<Trip>) {
 
     return {
       success: true,
-      data: tripData,
       message: 'Trip updated successfully',
     };
-  } catch (error) {
-    console.error('[updateTrip] Error:', error);
-    return {
-      success: false,
-      data: null,
-      message: 'Failed to update trip',
-    };
+  } catch (error: unknown) {
+    return handleServiceError<void>('updateTrip', error); // Pass the generic type argument
   }
 }
 
-// 🔹 Delete Trip
-export async function deleteTrip(tripId: string) {
+/**
+ * Deletes a trip document.
+ * @param tripId The ID of the trip to delete.
+ * @returns A ServiceResponse indicating success or failure.
+ */
+export async function deleteTrip(tripId: string): Promise<ServiceResponse<void>> {
   try {
     const tripDocRef = doc(tripsCollection, tripId);
     await deleteDoc(tripDocRef);
 
     return {
       success: true,
-      data: null,
       message: 'Trip deleted successfully',
     };
-  } catch (error) {
-    console.error('[deleteTrip] Error:', error);
-    return {
-      success: false,
-      data: null,
-      message: 'Failed to delete trip',
-    };
+  } catch (error: unknown) {
+    return handleServiceError<void>('deleteTrip', error); // Pass the generic type argument
   }
 }
 
-// 🔹 (Optional) Fetch All Trips for a User
-export async function fetchTripsForUser(userId: string) {
-  try {
-    const snap = await getDocs(tripsCollection);
-    const trips: Trip[] = [];
+/**
+ * Fetches trips from Firestore based on provided options, where the user is involved (creator or member).
+ * This function incorporates filtering, sorting, searching, and pagination.
+ * It's designed for "load more" / infinite scroll UI patterns.
+ * @param options Filtering, sorting, searching, and pagination parameters.
+ * @returns A PaginatedTripsResponse containing the fetched trips and pagination info.
+ */
+export async function fetchTrips(options: FetchTripsOptions): Promise<PaginatedTripsResponse> {
+  const {
+    userInvolvedId,
+    sortBy = 'createdAt',
+    sortDirection = 'desc',
+    statusFilter = 'all',
+    searchQuery = '',
+    limit: fetchLimit = 10,
+    lastVisible = null,
+  } = options;
 
-    snap.forEach((docSnap) => {
-      const data = docSnap.data() as Trip;
-      if (data.members.includes(userId)) {
-        trips.push(data);
-      }
+  let q = query(tripsCollection);
+
+  if (userInvolvedId) {
+    q = query(q, where('involvedUsers', 'array-contains', userInvolvedId));
+  }
+  if (statusFilter !== 'all') {
+    q = query(q, where('status', '==', statusFilter));
+  }
+
+  if (searchQuery) {
+    q = query(q, where('name', '>=', searchQuery), where('name', '<=', searchQuery + '\uf8ff'));
+  }
+
+  q = query(q, orderBy(sortBy, sortDirection));
+
+  if (lastVisible) {
+    q = query(q, startAfter(lastVisible));
+  }
+  q = query(q, limit(fetchLimit + 1));
+
+  try {
+    const snapshot = await getDocs(q);
+    const fetchedDocs: QueryDocumentSnapshot<DocumentData>[] = [];
+
+    snapshot.forEach((docSnap) => {
+      fetchedDocs.push(docSnap);
     });
+
+    const hasMore = fetchedDocs.length > fetchLimit;
+    const documentsToReturn = hasMore ? fetchedDocs.slice(0, fetchLimit) : fetchedDocs;
+
+    const trips: Trip[] = documentsToReturn.map(
+      (docSnap) =>
+        ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }) as Trip,
+    );
+
+    const newLastVisible = hasMore ? fetchedDocs[fetchLimit - 1] : null;
 
     return {
       success: true,
       data: trips,
-      message: 'Trips fetched successfully',
+      message: 'Trips fetched successfully.',
+      hasMore: hasMore,
+      lastVisibleDoc: newLastVisible,
     };
-  } catch (error) {
-    console.error('[fetchTripsForUser] Error:', error);
+  } catch (error: unknown) {
+    const errorResponse = handleServiceError<Trip[]>('fetchTrips', error); // Pass the generic type argument
+    // Overwrite data, hasMore, lastVisibleDoc for this specific response type to satisfy PaginatedTripsResponse
     return {
-      success: false,
-      data: [],
-      message: 'Failed to fetch user trips',
-    };
-  }
-}
-
-// 🔹 Fetch Trips by Creator (createdBy)
-export async function fetchTripsByCreator(userId: string) {
-  try {
-    const q = query(tripsCollection, where('createdBy', '==', userId));
-    const snap = await getDocs(q);
-
-    const trips: Trip[] = [];
-    snap.forEach((docSnap) => {
-      trips.push(docSnap.data() as Trip);
-    });
-
-    return {
-      success: true,
-      data: trips,
-      message: 'Trips fetched successfully by creator',
-    };
-  } catch (error) {
-    console.error('[fetchTripsByCreator] Error:', error);
-    return {
-      success: false,
-      data: [],
-      message: 'Failed to fetch trips by creator',
+      ...errorResponse,
+      data: [], // Ensure data is an empty array on error
+      hasMore: false,
+      lastVisibleDoc: null,
     };
   }
 }

@@ -1,13 +1,13 @@
-import type { Trip, TripState, StateResponse } from './types';
+import type { Trip, TripState, ServiceResponse } from './types';
 import * as TripsService from '../services/trips.service';
 
-export async function createTrip(this: TripState, tripData: Trip): Promise<StateResponse> {
+export async function createTrip(this: TripState, tripData: Trip): Promise<ServiceResponse> {
   try {
     const response = await TripsService.createTrip(tripData);
 
     if (response.success && response.data) {
       // response.data might have an 'id' property, so ensure typing matches Trip (or extend Trip type)
-      this.trips.push(response.data as Trip);
+      this.trips.push(response.data);
       return {
         success: true,
         message: response.message,
@@ -28,7 +28,7 @@ export async function createTrip(this: TripState, tripData: Trip): Promise<State
   }
 }
 
-export async function fetchTrip(this: TripState, tripId: string): Promise<StateResponse> {
+export async function fetchTrip(this: TripState, tripId: string): Promise<ServiceResponse> {
   try {
     const response = await TripsService.fetchTrip(tripId);
 
@@ -54,7 +54,7 @@ export async function fetchTrip(this: TripState, tripId: string): Promise<StateR
   }
 }
 
-export async function fetchTrips(this: TripState, uid: string): Promise<StateResponse> {
+export async function fetchTrips(this: TripState, uid: string): Promise<ServiceResponse> {
   try {
     const response = await TripsService.fetchTripsByCreator(uid);
 
@@ -84,7 +84,7 @@ export async function updateTrip(
   this: TripState,
   tripId: string,
   tripData: Partial<Trip>,
-): Promise<StateResponse<Partial<Trip>>> {
+): Promise<ServiceResponse<Partial<Trip>>> {
   try {
     const response = await TripsService.updateTrip(tripId, tripData);
 
@@ -117,7 +117,7 @@ export async function updateTrip(
   }
 }
 
-export async function deleteTrip(this: TripState, tripId: string): Promise<StateResponse> {
+export async function deleteTrip(this: TripState, tripId: string): Promise<ServiceResponse> {
   try {
     const response = await TripsService.deleteTrip(tripId);
 
