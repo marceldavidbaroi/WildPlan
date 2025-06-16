@@ -2,10 +2,12 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from 'src/modules/auth/store';
 import auth from 'src/modules/auth/router';
 import dashboard from 'src/modules/dashboard/router';
+import trip from 'src/modules/trip/router';
 
 const routes: RouteRecordRaw[] = [
   ...auth,
   ...dashboard,
+  ...trip,
 
   {
     path: '/unauthorized',

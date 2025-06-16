@@ -1,12 +1,12 @@
 // src/types/trip-types.ts
 
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import type { QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
 
 // Core Location Interface
 export interface TripLocation {
   name: string;
-  lat: number;
-  lng: number;
+  lat?: number | undefined;
+  lng?: number | undefined;
 }
 
 // 1. Interface for Data when CREATING a trip
@@ -17,9 +17,26 @@ export interface TripCreateData {
   endDate: string;
   createdBy: string;
   members: string[];
+  inviteCode?: string | undefined;
+  photoURL?: string | undefined;
+  status: 'upcoming' | 'completed' | 'cancelled';
+}
+
+// NEW: Interface for a Trip document as RETRIEVED from Firestore, before timestamp conversion
+export interface TripFromFirestore {
+  id: string; // Firestore document ID
+  name: string;
+  location: TripLocation;
+  startDate: string;
+  endDate: string;
+  createdBy: string;
+  members: string[];
+  involvedUsers: string[];
   inviteCode?: string;
   photoURL?: string;
   status: 'upcoming' | 'completed' | 'cancelled';
+  createdAt: Timestamp; // This is the key difference
+  updatedAt: Timestamp; // This is the key difference
 }
 
 // 2. Interface for a Trip document as RETRIEVED from Firestore
@@ -32,8 +49,8 @@ export interface Trip {
   createdBy: string;
   members: string[];
   involvedUsers: string[]; // This array contains creator's UID + all member UIDs
-  inviteCode?: string;
-  photoURL?: string;
+  inviteCode?: string | undefined;
+  photoURL?: string | undefined;
   status: 'upcoming' | 'completed' | 'cancelled';
   createdAt: number;
   updatedAt: number;

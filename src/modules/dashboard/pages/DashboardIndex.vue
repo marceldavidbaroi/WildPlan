@@ -11,56 +11,42 @@
       </div>
     </div>
 
-    <!-- Trips Card Slideshow -->
-    <q-carousel
-      navigation
-      arrows
-      animated
-      swipeable
-      height="220px"
-      control-color="primary"
-      control-text-color="primary"
-    >
-      <q-carousel-slide v-for="trip in trips" :key="trip.id" :name="trip.id">
-        <q-card class="q-ma-sm bg-white text-primary">
-          <q-card-section>
-            <div class="text-h6 q-mb-sm">{{ trip.title }}</div>
-            <div class="text-subtitle2">{{ trip.description }}</div>
-            <div class="text-caption q-mt-xs">Dates: {{ trip.startDate }} - {{ trip.endDate }}</div>
-          </q-card-section>
-        </q-card>
-      </q-carousel-slide>
-    </q-carousel>
+    <!-- add trip button  -->
+    <div>
+      <q-btn color="primary" text-color="white" label="Add trip" icon="add" @click="onAddClick" />
+      <AddTripComponent
+        v-model="showAddTripPopup"
+        @submit="handleCreateTrip"
+        @close="showAddTripPopup = false"
+      />
+    </div>
+    this is the card
+    <SwipeCard :cards="tripStore.trips || []" />
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import AddTripComponent from '../components/AddTripComponent.vue';
+import type { TripCreateData } from '../../trip/store/types';
+import { useTripStore } from '../../trip/store';
+import SwipeCard from '../components/SwipeCard.vue';
 
+const tripStore = useTripStore();
+
+const showAddTripPopup = ref(false);
+const onAddClick = () => {
+  showAddTripPopup.value = true;
+};
+
+async function handleCreateTrip(data: TripCreateData) {
+  console.log('Trip created:', data);
+  const response = await tripStore.createTrip(data);
+  console.log(response);
+
+  // You can now call a service to save to Firebase
+}
 // Static sample trips data (replace with Firestore data later)
-const trips = ref([
-  {
-    id: 'trip1',
-    title: 'Weekend at Pine Forest',
-    description: 'Explore hiking trails and camp by the lake',
-    startDate: '2025-07-10',
-    endDate: '2025-07-12',
-  },
-  {
-    id: 'trip2',
-    title: 'Mountain Adventure',
-    description: 'Backpacking in the Rocky Mountains',
-    startDate: '2025-08-01',
-    endDate: '2025-08-07',
-  },
-  {
-    id: 'trip3',
-    title: 'Beachside Camping',
-    description: 'Relax by the ocean and enjoy campfires',
-    startDate: '2025-09-15',
-    endDate: '2025-09-18',
-  },
-]);
 
 // Current date formatted
 const currentDate = computed(() => {
@@ -71,6 +57,35 @@ const currentDate = computed(() => {
     day: 'numeric',
   };
   return new Date().toLocaleDateString(undefined, options);
+});
+
+// const cardData = [
+//   {
+//     id: 1,
+//     title: 'Sunset Vibes',
+//     subtitle: 'Beautiful orange sky',
+//     image:
+//       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
+//   },
+//   {
+//     id: 2,
+//     title: 'Mountain Peak',
+//     subtitle: 'Snow capped mountains',
+//     image:
+//       'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=400&q=80',
+//   },
+//   {
+//     id: 3,
+//     title: 'Forest Walk',
+//     subtitle: 'Sunlight through trees',
+//     image:
+//       'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=400&q=80',
+//   },
+// ];
+
+onMounted(async () => {
+  await tripStore.fetchTrips({});
+  console.log(tripStore.trips);
 });
 </script>
 

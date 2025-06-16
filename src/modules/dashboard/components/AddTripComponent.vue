@@ -1,0 +1,187 @@
+<template>
+  <q-dialog v-model="isDialogOpen" persistent>
+    <q-card class="q-pa-md" style="min-width: 500px">
+      <q-card-section>
+        <div class="text-h6"><q-icon name="luggage" size="lg" /> Create New Trip</div>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-section class="q-gutter-md">
+        <q-form @submit.prevent="submitForm" class="q-gutter-md">
+          <!-- Trip Name -->
+          <q-input v-model="form.name" label="Trip Name" filled required>
+            <template v-slot:prepend>
+              <q-icon name="travel_explore" />
+            </template>
+          </q-input>
+
+          <!-- Location -->
+          <q-input
+            v-model="form.location.name"
+            label="Location Name"
+            filled
+            required
+            class="q-mb-md"
+          >
+            <template v-slot:prepend>
+              <q-icon name="location_on" />
+            </template>
+          </q-input>
+
+          <!-- Dates -->
+          <div class="row">
+            <div class="col q-mr-xs">
+              <q-input v-model="form.startDate" label="Start Date" filled readonly required>
+                <template v-slot:prepend>
+                  <q-icon name="event" />
+                </template>
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="form.startDate" mask="YYYY-MM-DD" />
+                </q-popup-proxy>
+              </q-input>
+            </div>
+
+            <div class="col q-ml-xs">
+              <q-input v-model="form.endDate" label="End Date" filled readonly required>
+                <template v-slot:prepend>
+                  <q-icon name="event_available" />
+                </template>
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="form.endDate" mask="YYYY-MM-DD" />
+                </q-popup-proxy>
+              </q-input>
+            </div>
+          </div>
+
+          <!-- Created By -->
+          <q-input v-model="form.createdBy" label="Created By (UID)" filled required>
+            <template v-slot:prepend>
+              <q-icon name="person" />
+            </template>
+          </q-input>
+
+          <!-- Members -->
+          <q-input
+            v-model="form.membersString"
+            label="Members (comma-separated UIDs)"
+            filled
+            hint="e.g. uid1, uid2, uid3"
+          >
+            <template v-slot:prepend>
+              <q-icon name="group" />
+            </template>
+          </q-input>
+
+          <!-- Invite Code -->
+          <q-input v-model="form.inviteCode" label="Invite Code" filled>
+            <template v-slot:prepend>
+              <q-icon name="key" />
+            </template>
+          </q-input>
+
+          <!-- Photo URL -->
+          <q-input v-model="form.photoURL" label="Photo URL" filled>
+            <template v-slot:prepend>
+              <q-icon name="image" />
+            </template>
+          </q-input>
+
+          <!-- Status -->
+          <q-select
+            v-model="form.status"
+            :options="statusOptions"
+            label="Status"
+            filled
+            emit-value
+            map-options
+            required
+          >
+            <template v-slot:prepend>
+              <q-icon name="flag" />
+            </template>
+          </q-select>
+        </q-form>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-actions align="right">
+        <q-btn flat label="Cancel" color="primary" @click="closeDialog" />
+        <q-btn label="Create" color="primary" @click="submitForm" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, defineEmits, watch, reactive } from 'vue';
+import type { TripCreateData } from '../../trip/store/types';
+
+const emits = defineEmits<{
+  (e: 'submit', data: TripCreateData): void;
+  (e: 'close'): void;
+}>();
+
+// Controls dialog visibility from parent
+const props = defineProps<{
+  modelValue: boolean;
+}>();
+
+const isDialogOpen = ref(props.modelValue);
+watch(
+  () => props.modelValue,
+  (val) => (isDialogOpen.value = val),
+);
+watch(isDialogOpen, (val) => {
+  if (!val) emits('close');
+});
+
+const statusOptions: TripCreateData['status'][] = ['upcoming', 'completed', 'cancelled'];
+
+const form = reactive({
+  name: '',
+  location: {
+    name: '',
+    lat: 0,
+    lng: 0,
+  },
+  startDate: '',
+  endDate: '',
+  createdBy: '',
+  membersString: '',
+  inviteCode: '',
+  photoURL: '',
+  status: 'upcoming' as TripCreateData['status'],
+});
+
+function closeDialog() {
+  isDialogOpen.value = false;
+}
+
+function submitForm() {
+  const membersArray = form.membersString
+    .split(',')
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0);
+
+  const payload: TripCreateData = {
+    name: form.name,
+    location: {
+      name: form.location.name,
+      lat: form.location.lat,
+      lng: form.location.lng,
+    },
+    startDate: form.startDate,
+    endDate: form.endDate,
+    createdBy: form.createdBy,
+    members: membersArray,
+    inviteCode: form.inviteCode || undefined,
+    photoURL: form.photoURL || undefined,
+    status: form.status,
+  };
+
+  emits('submit', payload);
+  closeDialog();
+}
+</script>
