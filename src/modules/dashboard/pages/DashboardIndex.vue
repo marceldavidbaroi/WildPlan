@@ -31,6 +31,8 @@ import AddTripComponent from '../components/AddTripComponent.vue';
 import type { TripCreateData } from '../../trip/store/types';
 import { useTripStore } from '../../trip/store';
 import SwipeCard from '../components/SwipeCard.vue';
+import { useAuthStore } from 'src/modules/auth/store';
+const authStore = useAuthStore();
 
 const tripStore = useTripStore();
 
@@ -85,7 +87,8 @@ const currentDate = computed(() => {
 
 onMounted(async () => {
   await tripStore.fetchTrips({});
-  console.log(tripStore.trips);
+  await authStore.fetchAllUser();
+  console.log('all user', authStore.allUsers);
 });
 </script>
 

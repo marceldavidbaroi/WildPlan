@@ -11,6 +11,17 @@ const authRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('./pages/TripListIndex.vue'),
       },
+
+      {
+        name: 'trip_settings',
+        path: 'settings/:id',
+        component: () => import('./pages/TripSettings.vue'),
+      },
+      {
+        name: 'trip_details',
+        path: ':id',
+        component: () => import('./pages/TripDetails.vue'),
+      },
     ],
   },
 ];

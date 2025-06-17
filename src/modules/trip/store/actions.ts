@@ -100,7 +100,7 @@ export async function fetchTrips(
 export async function updateTrip(
   this: TripState,
   tripId: string,
-  tripData: Partial<TripCreateData>,
+  tripData: Partial<Trip>,
 ): Promise<ServiceResponse<void>> {
   this.loading = true;
   this.error = null;

@@ -180,3 +180,11 @@ export async function updateProfile(
     };
   }
 }
+
+export async function fetchAllUser(this: AuthState) {
+  this.loading = true;
+  const response = await UserProfileService.fetchAllUser();
+  this.allUsers = response?.data;
+  this.loading = false;
+  return response;
+}

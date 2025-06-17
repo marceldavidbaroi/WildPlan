@@ -52,6 +52,7 @@ export interface Trip {
   inviteCode?: string | undefined;
   photoURL?: string | undefined;
   status: 'upcoming' | 'completed' | 'cancelled';
+  archived?: boolean;
   createdAt: number;
   updatedAt: number;
 }

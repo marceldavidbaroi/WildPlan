@@ -2,7 +2,7 @@
   <div class="q-pa-md">
     <div class="row q-col-gutter-sm q-row-gutter-sm">
       <div v-for="trip in trips" :key="trip.id" class="col-12 col-sm-6 col-md-3">
-        <q-card class="trip-card" flat bordered>
+        <q-card class="trip-card" flat bordered @click="onCardClick(trip.id)">
           <div class="card-image">
             <img :src="trip.photoURL || fallbackImage" alt="Trip Cover" />
             <div class="info-overlay">
@@ -33,8 +33,10 @@
 <script setup lang="ts">
 import { date } from 'quasar';
 import type { Trip } from '../store/types';
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
-const props = defineProps<{
+defineProps<{
   trips: Trip[];
 }>();
 
@@ -56,6 +58,10 @@ function getStatusColor(status: Trip['status']) {
       return 'grey';
   }
 }
+
+const onCardClick = async (id: string) => {
+  await router.push({ path: `/trip/${id}` });
+};
 </script>
 
 <style scoped>

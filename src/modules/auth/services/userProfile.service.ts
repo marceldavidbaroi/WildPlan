@@ -1,6 +1,16 @@
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 import { db } from 'src/boot/firebase';
-import type { UserProfile } from '../store/types';
+import type { UserProfile, ServiceResponse, FetchUserOptions } from '../store/types';
 import type { User } from 'firebase/auth';
 
 export async function fetchUserProfile(user: User): Promise<{
@@ -108,6 +118,53 @@ export async function updateUserProfile(
     return {
       success: false,
       message: 'Failed to update profile',
+    };
+  }
+}
+
+export async function fetchAllUser(
+  options: FetchUserOptions = {},
+): Promise<ServiceResponse<UserProfile[]>> {
+  try {
+    const colRef = collection(db, 'users');
+
+    // Start building the query
+    let q = query(colRef);
+
+    // Add sorting if requested
+    if (options.sortBy) {
+      q = query(q, orderBy(options.sortBy, options.sortDirection ?? 'asc'));
+    }
+
+    // Execute query
+    const snapshot = await getDocs(q);
+
+    // Map docs to UserProfile with id
+    let users = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as UserProfile),
+    }));
+
+    // Filter by searchQuery on displayName or email (client-side filtering)
+    if (options.searchQuery) {
+      const lowerQuery = options.searchQuery.toLowerCase();
+      users = users.filter(
+        (user) =>
+          (user.displayName?.toLowerCase().includes(lowerQuery) ?? false) ||
+          (user.email?.toLowerCase().includes(lowerQuery) ?? false),
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Users fetched successfully',
+      data: users,
+    };
+  } catch (error) {
+    console.error('[fetchAllUser] Error:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch users',
     };
   }
 }

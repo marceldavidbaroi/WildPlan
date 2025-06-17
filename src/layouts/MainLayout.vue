@@ -1,14 +1,18 @@
 <template>
   <q-layout view="hHh lpR fFf ">
-    <!-- <q-header>
+    <q-header v-if="$q.screen.lt.md" style="background: #f5f1e9">
       <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-
-        <q-toolbar-title> Quasar App </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          color="primary"
+          @click="toggleLeftDrawer"
+        />
       </q-toolbar>
-    </q-header> -->
+    </q-header>
 
     <q-drawer
       v-model="leftDrawerOpen"
@@ -133,9 +137,9 @@ const linksList: EssentialLinkProps[] = [
 
 const leftDrawerOpen = ref(false);
 
-// function toggleLeftDrawer() {
-//   leftDrawerOpen.value = !leftDrawerOpen.value;
-// }
+function toggleLeftDrawer() {
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+}
 </script>
 
 <style scoped>
