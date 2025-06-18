@@ -33,6 +33,11 @@ const authRoutes: RouteRecordRaw[] = [
 
         component: () => import('./pages/UserSettings.vue'),
       },
+      {
+        name: 'logout',
+        path: 'logout',
+        component: () => import('./pages/LogoutIndex.vue'),
+      },
     ],
   },
 ];
