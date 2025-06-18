@@ -18,8 +18,6 @@
       />
     </template>
   </auth-card>
-
-  <NotifyMessage :success="notifySuccess" :message="notifyMessage" v-if="showNotify" />
 </template>
 
 <script setup lang="ts">
@@ -27,16 +25,13 @@ import AuthCard from '../components/AuthCard.vue';
 import FormRegister from '../components/FormRegister.vue';
 import { ref } from 'vue';
 import { useAuthStore } from '../store';
-import NotifyMessage from 'src/components/NotifyMessage.vue';
+import { Notify } from 'quasar';
 
 const authStore = useAuthStore();
 
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
-const notifySuccess = ref(false);
-const notifyMessage = ref('');
-const showNotify = ref(false);
 
 const socialButtons = [
   {
@@ -50,16 +45,23 @@ const socialButtons = [
 
 const handleRegister = async () => {
   if (password.value !== confirmPassword.value) {
-    notifySuccess.value = false;
-    notifyMessage.value = "Passwords don't match.";
-    showNotify.value = true;
+    Notify.create({
+      message: "Passwords don't match.",
+      type: 'info',
+      color: 'negative',
+      position: 'top',
+    });
+
     return;
   }
 
   const response = await authStore.registerWithEmail(email.value, password.value);
-  notifySuccess.value = response.success;
-  notifyMessage.value = response.message;
-  showNotify.value = true;
+  Notify.create({
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+    position: 'top',
+  });
 };
 
 function clearForm() {
@@ -70,8 +72,11 @@ function clearForm() {
 
 const handleSocialRegister = async () => {
   const response = await authStore.loginWithGoogle();
-  notifySuccess.value = response.success;
-  notifyMessage.value = response.message;
-  showNotify.value = true;
+  Notify.create({
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+    position: 'top',
+  });
 };
 </script>
