@@ -126,9 +126,9 @@
 
 <script setup lang="ts">
 import { ref, defineEmits, watch, reactive } from 'vue';
-import type { TripCreateData } from '../../trip/store/types';
+import type { TripCreateData } from '../modules/trip/store/types';
 import { useAuthStore } from 'src/modules/auth/store';
-import type { UserProfile } from '../../auth/store/types';
+import type { UserProfile } from '../modules/auth/store/types';
 
 const authStore = useAuthStore();
 

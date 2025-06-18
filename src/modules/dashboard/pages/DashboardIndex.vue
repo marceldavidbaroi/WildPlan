@@ -35,12 +35,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import AddTripComponent from '../components/AddTripComponent.vue';
+import AddTripComponent from 'src/components/AddTripComponent.vue';
 import type { TripCreateData } from '../../trip/store/types';
 import type { UserProfile } from '../../auth/store/types';
 import { useTripStore } from '../../trip/store';
 import SwipeCard from '../components/SwipeCard.vue';
 import { useAuthStore } from 'src/modules/auth/store';
+import { Notify } from 'quasar';
+
 const authStore = useAuthStore();
 
 const tripStore = useTripStore();
@@ -53,9 +55,12 @@ const onAddClick = () => {
 };
 
 async function handleCreateTrip(data: TripCreateData) {
-  console.log('Trip created:', data);
   const response = await tripStore.createTrip(data);
-  console.log(response);
+  Notify.create({
+    message: response.message,
+    color: response.success ? 'info' : 'negative',
+    type: 'info',
+  });
 
   // You can now call a service to save to Firebase
 }
@@ -101,7 +106,6 @@ onMounted(async () => {
   loading.value = true;
   await tripStore.fetchTrips({});
   await authStore.fetchAllUser();
-  console.log('all user', authStore.allUsers);
   allUsers.value = authStore.allUsers?.filter((u) => u.email !== authStore.user?.email);
 
   loading.value = false;
