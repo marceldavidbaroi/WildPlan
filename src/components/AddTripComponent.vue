@@ -91,11 +91,11 @@
           </q-input>
 
           <!-- Photo URL -->
-          <q-input v-model="form.photoURL" label="Photo URL" filled>
+          <!-- <q-input v-model="form.photoURL" label="Photo URL" filled>
             <template v-slot:prepend>
               <q-icon name="image" />
             </template>
-          </q-input>
+          </q-input> -->
 
           <!-- Status -->
           <q-select
@@ -166,11 +166,25 @@ const form = reactive({
   createdBy: authStore.profile!.uid,
   members: [],
   inviteCode: '',
-  photoURL: '',
+  photoURL: null,
   status: 'upcoming' as TripCreateData['status'],
 });
 
+function resetForm() {
+  form.name = '';
+  form.location.name = '';
+  form.location.lat = 0;
+  form.location.lng = 0;
+  form.startDate = '';
+  form.endDate = '';
+  form.members = [];
+  form.inviteCode = '';
+  form.photoURL = null;
+  form.status = 'upcoming';
+}
+
 function closeDialog() {
+  resetForm();
   isDialogOpen.value = false;
 }
 
@@ -189,9 +203,10 @@ function submitForm() {
     createdBy: form.createdBy,
     members: membersArray,
     inviteCode: form.inviteCode || undefined,
-    photoURL: form.photoURL || undefined,
+    photoURL: form.photoURL || '/images/placeholder.png',
     status: form.status,
   };
+  resetForm();
 
   emits('submit', payload);
   closeDialog();

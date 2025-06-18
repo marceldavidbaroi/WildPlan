@@ -57,6 +57,7 @@ const onAddClick = () => {
 async function handleCreateTrip(data: TripCreateData) {
   const response = await tripStore.createTrip(data);
   Notify.create({
+    position: 'top',
     message: response.message,
     color: response.success ? 'info' : 'negative',
     type: 'info',

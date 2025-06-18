@@ -1,19 +1,24 @@
 <template>
   <q-page padding>
-    <div class="row justify-end">
-      <q-btn flat color="primary" icon="add" @click="onAddClick">
-        <q-tooltip anchor="top middle" self="bottom middle" class="bg-secondary text-white">
-          Add Trip
-        </q-tooltip>
-      </q-btn>
-      <AddTripComponent
-        v-model="showAddTripPopup"
-        :allusers="allUsers || []"
-        @submit="handleCreateTrip"
-        @close="showAddTripPopup = false"
-      />
+    <div v-if="loading" class="absolute-full flex flex-center">
+      <q-spinner-ball size="lg" />
     </div>
-    <TripCard :trips="tripStore.trips || []" />
+    <div v-else>
+      <div class="row justify-end">
+        <q-btn flat color="primary" icon="add" @click="onAddClick">
+          <q-tooltip anchor="top middle" self="bottom middle" class="bg-secondary text-white">
+            Add Trip
+          </q-tooltip>
+        </q-btn>
+        <AddTripComponent
+          v-model="showAddTripPopup"
+          :allusers="allUsers || []"
+          @submit="handleCreateTrip"
+          @close="showAddTripPopup = false"
+        />
+      </div>
+      <TripCard :trips="tripStore.trips || []" />
+    </div>
   </q-page>
 </template>
 
@@ -32,13 +37,16 @@ const showAddTripPopup = ref(false);
 const tripStore = useTripStore();
 const allUsers = ref<UserProfile[]>();
 
+const loading = ref<boolean>(false);
 onMounted(async () => {
+  loading.value = true;
   await tripStore.fetchTrips({});
-  console.log(tripStore.trips);
+  loading.value = false;
 });
 
 const onAddClick = () => {
   showAddTripPopup.value = true;
+  console.log('clicked');
 };
 
 async function handleCreateTrip(data: TripCreateData) {

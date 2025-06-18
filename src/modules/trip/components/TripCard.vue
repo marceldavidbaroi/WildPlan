@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md">
-    <div class="row q-col-gutter-sm q-row-gutter-sm">
+    <div v-if="trips.length" class="row q-col-gutter-sm q-row-gutter-sm">
       <div v-for="trip in trips" :key="trip.id" class="col-12 col-sm-6 col-md-3">
         <q-card class="trip-card" flat bordered @click="onCardClick(trip.id)">
           <div class="card-image">
@@ -26,6 +26,11 @@
           </div>
         </q-card>
       </div>
+    </div>
+    <div v-else class="flex flex-center column text-center text-grey-7">
+      <q-icon name="map_off" size="64px" color="primary" />
+      <div class="text-h6 q-mt-md">No Trips Yet</div>
+      <div class="text-subtitle2 text-grey-6 q-mt-sm">Start planning your next adventure</div>
     </div>
   </div>
 </template>
