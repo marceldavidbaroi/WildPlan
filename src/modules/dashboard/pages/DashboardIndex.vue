@@ -1,27 +1,35 @@
 <template>
   <q-page class="q-pa-md">
     <!-- Weather & Date Row -->
-    <div class="row items-center justify-between q-mb-md">
-      <div class="text-subtitle1">
-        🌤️ Sunny 24°C
-        <!-- Replace with your weather API data -->
+    <div v-if="!loading">
+      <div class="row items-center justify-between q-mb-md">
+        <div class="text-subtitle1">
+          🌤️ Sunny 24°C
+          <!-- Replace with your weather API data -->
+        </div>
+        <div class="text-subtitle2 text-grey-7">
+          {{ currentDate }}
+        </div>
       </div>
-      <div class="text-subtitle2 text-grey-7">
-        {{ currentDate }}
+      <!-- add trip button  -->
+      <div class="row justify-end">
+        <q-btn flat color="primary" icon="add" @click="onAddClick">
+          <q-tooltip anchor="top middle" self="bottom middle" class="bg-secondary text-white">
+            Add Trip
+          </q-tooltip>
+        </q-btn>
+        <AddTripComponent
+          v-model="showAddTripPopup"
+          :allusers="allUsers || []"
+          @submit="handleCreateTrip"
+          @close="showAddTripPopup = false"
+        />
       </div>
+      <SwipeCard :cards="tripStore.trips || []" />
     </div>
-
-    <!-- add trip button  -->
-    <div>
-      <q-btn color="primary" text-color="white" label="Add trip" icon="add" @click="onAddClick" />
-      <AddTripComponent
-        v-model="showAddTripPopup"
-        @submit="handleCreateTrip"
-        @close="showAddTripPopup = false"
-      />
+    <div v-else class="absolute-full flex flex-center bg-transparent">
+      <q-spinner-ball color="primary" size="lg" />
     </div>
-    this is the card
-    <SwipeCard :cards="tripStore.trips || []" />
   </q-page>
 </template>
 
@@ -29,12 +37,15 @@
 import { ref, computed, onMounted } from 'vue';
 import AddTripComponent from '../components/AddTripComponent.vue';
 import type { TripCreateData } from '../../trip/store/types';
+import type { UserProfile } from '../../auth/store/types';
 import { useTripStore } from '../../trip/store';
 import SwipeCard from '../components/SwipeCard.vue';
 import { useAuthStore } from 'src/modules/auth/store';
 const authStore = useAuthStore();
 
 const tripStore = useTripStore();
+
+const allUsers = ref<UserProfile[]>();
 
 const showAddTripPopup = ref(false);
 const onAddClick = () => {
@@ -85,10 +96,15 @@ const currentDate = computed(() => {
 //   },
 // ];
 
+const loading = ref<boolean>(false);
 onMounted(async () => {
+  loading.value = true;
   await tripStore.fetchTrips({});
   await authStore.fetchAllUser();
   console.log('all user', authStore.allUsers);
+  allUsers.value = authStore.allUsers?.filter((u) => u.email !== authStore.user?.email);
+
+  loading.value = false;
 });
 </script>
 

@@ -55,23 +55,33 @@
           </div>
 
           <!-- Created By -->
-          <q-input v-model="form.createdBy" label="Created By (UID)" filled required>
+          <!-- <q-input v-model="form.createdBy" label="Created By (UID)" filled required>
             <template v-slot:prepend>
               <q-icon name="person" />
             </template>
-          </q-input>
+          </q-input> -->
 
-          <!-- Members -->
-          <q-input
-            v-model="form.membersString"
-            label="Members (comma-separated UIDs)"
+          <!-- Members --><q-select
+            v-model="form.members"
+            label="Members"
             filled
-            hint="e.g. uid1, uid2, uid3"
+            use-chips
+            multiple
+            use-input
+            input-debounce="300"
+            new-value-mode="add"
+            hint="Enter or select member UIDs"
+            :options="allusers"
+            option-label="email"
+            option-value="uid"
+            map-options
+            emit-value
+            clearable
           >
-            <template v-slot:prepend>
+            <template #prepend>
               <q-icon name="group" />
             </template>
-          </q-input>
+          </q-select>
 
           <!-- Invite Code -->
           <q-input v-model="form.inviteCode" label="Invite Code" filled>
@@ -117,6 +127,10 @@
 <script setup lang="ts">
 import { ref, defineEmits, watch, reactive } from 'vue';
 import type { TripCreateData } from '../../trip/store/types';
+import { useAuthStore } from 'src/modules/auth/store';
+import type { UserProfile } from '../../auth/store/types';
+
+const authStore = useAuthStore();
 
 const emits = defineEmits<{
   (e: 'submit', data: TripCreateData): void;
@@ -126,6 +140,7 @@ const emits = defineEmits<{
 // Controls dialog visibility from parent
 const props = defineProps<{
   modelValue: boolean;
+  allusers: UserProfile[];
 }>();
 
 const isDialogOpen = ref(props.modelValue);
@@ -148,8 +163,8 @@ const form = reactive({
   },
   startDate: '',
   endDate: '',
-  createdBy: '',
-  membersString: '',
+  createdBy: authStore.profile!.uid,
+  members: [],
   inviteCode: '',
   photoURL: '',
   status: 'upcoming' as TripCreateData['status'],
@@ -160,10 +175,7 @@ function closeDialog() {
 }
 
 function submitForm() {
-  const membersArray = form.membersString
-    .split(',')
-    .map((m) => m.trim())
-    .filter((m) => m.length > 0);
+  const membersArray = form.members;
 
   const payload: TripCreateData = {
     name: form.name,

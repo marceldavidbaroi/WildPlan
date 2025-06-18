@@ -4,6 +4,7 @@ import type { User } from 'firebase/auth';
 export interface Contact {
   name: string;
   email: string;
+  photoURL: string | null;
 }
 
 export interface UserProfile {
@@ -11,23 +12,23 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
-  address?: string;
+  address?: string | null | undefined;
 
   // Trips
-  joinedTrips?: string[];
-  favouriteTrips?: string[]; // ⬅️ NEW
+  joinedTrips?: string[] | null | undefined;
+  favouriteTrips?: string[] | null | undefined; // ⬅️ NEW
 
   // Contacts
-  contacts?: Contact[]; // ⬅️ NEW
+  contacts: Contact[] | null | undefined; // ⬅️ NEW
 
   // Preferences
-  preferences?: {
-    notifications?: boolean;
-    theme?: string;
+  preferences: {
+    notifications: boolean;
+    theme: string;
   };
 
-  createdAt?: number;
-  updatedAt?: number;
+  createdAt?: number | null | undefined;
+  updatedAt?: number | null | undefined;
 }
 
 export interface AuthState {

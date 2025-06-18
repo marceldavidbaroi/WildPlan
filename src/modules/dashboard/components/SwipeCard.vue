@@ -1,5 +1,12 @@
 <template>
-  <div class="q-pa-md">
+  <q-banner v-if="!cards.length" class="bg-secondary text-white q-pa-md q-mb-md" rounded dense>
+    <template #avatar>
+      <q-icon name="event_busy" />
+    </template>
+
+    You have no trip planned.
+  </q-banner>
+  <div v-else class="q-pa-md">
     <q-scroll-area class="scroll-container no-scrollbar">
       <div class="row no-wrap q-gutter-md scroll-row">
         <q-card
@@ -11,7 +18,7 @@
           :style="{ backgroundImage: `url(${card.photoURL || defaultImage})` }"
         >
           <div class="overlay" />
-          <q-card-section class="card-text">
+          <q-card-section class="card-text" @click="router.push({ path: `/trip/${card.id}` })">
             <div class="text-h6">{{ card.name }}</div>
             <div class="text-subtitle2">{{ card.location?.name || card.status }}</div>
             <div class="text-caption">{{ formatDateRange(card.startDate, card.endDate) }}</div>
@@ -19,12 +26,20 @@
         </q-card>
       </div>
     </q-scroll-area>
-    <div class="row justify-end">all...</div>
+    <div
+      class="row justify-end text-secondary text-bold"
+      @click="router.push({ path: `/trip` })"
+      style="cursor: pointer"
+    >
+      more...
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Trip } from 'src/modules/trip/store/types';
+import { useRouter } from 'vue-router';
+const router = useRouter();
 defineProps<{
   cards: Array<Trip>;
 }>();

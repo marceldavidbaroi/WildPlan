@@ -6,12 +6,31 @@
       <p class="text-subtitle2 text-grey-7 q-mt-sm">
         The page you're looking for doesn't exist or has been moved.
       </p>
-      <q-btn label="Go to Home" color="primary" class="q-mt-md full-width" to="/" unelevated />
+      <q-btn
+        v-if="authStore.isAuthenticated"
+        label="Go to Dashboard"
+        color="primary"
+        class="q-mt-md full-width"
+        to="/dashboard"
+        unelevated
+      />
+      <q-btn
+        v-else
+        label="Go to Home"
+        color="primary"
+        class="q-mt-md full-width"
+        to="/"
+        unelevated
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from 'src/modules/auth/store';
+
+const authStore = useAuthStore();
+
 // No script needed
 </script>
 

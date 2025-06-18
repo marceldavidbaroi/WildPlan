@@ -22,6 +22,19 @@ const authRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/',
+    component: () => import('src/layouts/MainLayout.vue'),
+    children: [
+      {
+        meta: { requiresAuth: true },
+        name: 'user_settings',
+        path: 'settings',
+
+        component: () => import('./pages/UserSettings.vue'),
+      },
+    ],
+  },
 ];
 
 export default authRoutes;

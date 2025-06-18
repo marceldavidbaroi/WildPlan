@@ -128,6 +128,12 @@ const linksList: EssentialLinkProps[] = [
     link: '/chat',
   },
   {
+    title: 'Settings',
+    caption: 'Settings for user',
+    icon: 'settings',
+    link: '/settings',
+  },
+  {
     title: 'Logout',
     caption: 'Sign out of your account',
     icon: 'logout',

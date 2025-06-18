@@ -153,6 +153,7 @@ export async function updateProfile(
   this: AuthState,
   profileData: Partial<UserProfile>,
 ): Promise<StateResponse> {
+  this.loading = true;
   if (!this.user) {
     return {
       success: false,
@@ -163,6 +164,7 @@ export async function updateProfile(
   try {
     await UserProfileService.updateUserProfile(this.user.uid, profileData);
     this.profile = { ...this.profile, ...profileData } as UserProfile;
+    this.loading = false;
 
     return {
       success: true,
@@ -173,6 +175,7 @@ export async function updateProfile(
     let message = 'Unknown error';
     if (error instanceof Error) message = error.message;
     else if (typeof error === 'string') message = error;
+    this.loading = false;
 
     return {
       success: false,
