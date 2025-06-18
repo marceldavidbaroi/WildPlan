@@ -78,6 +78,7 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
 
     const tripToSave = {
       ...tripData,
+      name_lowercase: tripData.name.toLowerCase(), // Add this line
       involvedUsers: involvedUsers,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -99,7 +100,7 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
       message: 'Trip created successfully!',
     };
   } catch (error: unknown) {
-    return handleServiceError<Trip>('createTrip', error); // Pass the generic type argument
+    return handleServiceError<Trip>('createTrip', error);
   }
 }
 
@@ -198,7 +199,7 @@ export async function fetchTrips(options: FetchTripsOptions): Promise<PaginatedT
   const {
     userInvolvedId,
     sortBy = 'createdAt',
-    sortDirection = 'desc',
+    sortDirection = 'asc',
     statusFilter = 'all',
     searchQuery = '',
     limit: fetchLimit = 10,
@@ -210,19 +211,29 @@ export async function fetchTrips(options: FetchTripsOptions): Promise<PaginatedT
   if (userInvolvedId) {
     q = query(q, where('involvedUsers', 'array-contains', userInvolvedId));
   }
+
   if (statusFilter !== 'all') {
     q = query(q, where('status', '==', statusFilter));
   }
+  console.log(statusFilter);
 
+  // Apply search filter with correct ordering to avoid index error
   if (searchQuery) {
-    q = query(q, where('name', '>=', searchQuery), where('name', '<=', searchQuery + '\uf8ff'));
+    const searchLower = searchQuery.toLowerCase();
+    q = query(
+      q,
+      where('name_lowercase', '>=', searchLower),
+      where('name_lowercase', '<=', searchLower + '\uf8ff'),
+      orderBy('name_lowercase'),
+    );
+  } else {
+    q = query(q, orderBy(sortBy, sortDirection));
   }
-
-  q = query(q, orderBy(sortBy, sortDirection));
 
   if (lastVisible) {
     q = query(q, startAfter(lastVisible));
   }
+
   q = query(q, limit(fetchLimit + 1));
 
   try {
@@ -250,15 +261,14 @@ export async function fetchTrips(options: FetchTripsOptions): Promise<PaginatedT
       success: true,
       data: trips,
       message: 'Trips fetched successfully.',
-      hasMore: hasMore,
+      hasMore,
       lastVisibleDoc: newLastVisible,
     };
   } catch (error: unknown) {
-    const errorResponse = handleServiceError<Trip[]>('fetchTrips', error); // Pass the generic type argument
-    // Overwrite data, hasMore, lastVisibleDoc for this specific response type to satisfy PaginatedTripsResponse
+    const errorResponse = handleServiceError<Trip[]>('fetchTrips', error);
     return {
       ...errorResponse,
-      data: [], // Ensure data is an empty array on error
+      data: [],
       hasMore: false,
       lastVisibleDoc: null,
     };
