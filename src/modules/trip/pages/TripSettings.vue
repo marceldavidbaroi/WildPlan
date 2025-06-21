@@ -193,6 +193,15 @@
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
+
+    <DeleteDialog
+      v-model="showDeleteConfirmDialog"
+      message="Are you sure you want to delete this item? This action cannot be undone."
+      :verifyText="verifyText"
+      :loading="tripStore.loading"
+      @confirm="handleDelete"
+      @cancel="handleCancel"
+    />
   </q-page>
 </template>
 
@@ -205,6 +214,7 @@ import { QPopupProxy } from 'quasar';
 import type { Trip } from '../store/types';
 import { useAuthStore } from 'src/modules/auth/store';
 import type { UserProfile } from '../../auth/store/types';
+import DeleteDialog from 'src/components/DeleteDialog.vue';
 
 const route = useRoute();
 
@@ -222,7 +232,9 @@ const isArchived = ref(trip.value.archived ?? false);
 const id = ref();
 const originalTrip = ref<Trip>();
 const success = ref<boolean>(false);
+const showDeleteConfirmDialog = ref<boolean>(false);
 const message = ref<string>('');
+const verifyText = ref<string>('');
 
 const tripMemberList = computed(
   () =>
@@ -271,27 +283,35 @@ function copyInviteCode() {
   });
 }
 
-function onArchiveToggle(val: boolean) {
+async function onArchiveToggle(val: boolean) {
   isArchived.value = val;
   trip.value.archived = val;
-  trip.value.updatedAt = Date.now();
-  $q.notify({
-    type: 'info',
-    message: val ? 'Trip archived' : 'Trip unarchived',
-    icon: 'archive',
-  });
+  const payload = {
+    archived: val,
+  };
+  await updateTripDetails(id.value, payload);
 }
 
 function confirmDelete() {
-  $q.dialog({
-    title: 'Delete Trip',
-    message: 'This will permanently delete the trip. Continue?',
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    $q.notify({ type: 'negative', message: 'Trip deleted (mocked)' });
-    router.push('/trip');
+  verifyText.value = trip.value.name;
+
+  showDeleteConfirmDialog.value = true;
+}
+
+async function handleDelete() {
+  const response = await tripStore.deleteTrip(id.value);
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    color: response.success ? 'info' : 'negative',
+    type: 'info',
   });
+
+  await router.push({ path: '/trip' });
+}
+
+function handleCancel() {
+  console.log('Cancelled');
 }
 
 const onCancle = () => {
