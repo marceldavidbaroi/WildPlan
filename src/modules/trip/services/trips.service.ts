@@ -80,6 +80,7 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
       ...tripData,
       name_lowercase: tripData.name.toLowerCase(), // Add this line
       involvedUsers: involvedUsers,
+      archived: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };

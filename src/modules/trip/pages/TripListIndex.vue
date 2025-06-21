@@ -116,10 +116,12 @@ import AddTripComponent from 'src/components/AddTripComponent.vue';
 
 import type { Trip, TripCreateData } from '../../trip/store/types';
 import type { UserProfile } from '../../auth/store/types';
+import { useAuthStore } from 'src/modules/auth/store';
 
 const tripStore = useTripStore();
+const authStore = useAuthStore();
 const trips = ref<Trip[]>([]);
-const allUsers = ref<UserProfile[]>([]);
+const allUsers = ref<UserProfile[]>(authStore.allUsers || []);
 
 const page = ref(1);
 const rowsPerPage = ref(10);

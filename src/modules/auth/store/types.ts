@@ -2,6 +2,7 @@
 import type { User } from 'firebase/auth';
 
 export interface Contact {
+  uid: string;
   name: string;
   email: string;
   photoURL: string | null;

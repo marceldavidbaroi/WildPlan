@@ -70,7 +70,7 @@
             use-input
             input-debounce="300"
             new-value-mode="add"
-            hint="Enter or select member UIDs"
+            hint="select member "
             :options="allusers"
             option-label="email"
             option-value="uid"

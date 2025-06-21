@@ -89,20 +89,34 @@
         <!-- MEMBERS -->
         <q-tab-panel name="members">
           <div class="text-h6 q-mb-sm">Trip Members</div>
-          <div class="text-caption text-grey q-mb-md">
+          <!-- <div class="text-caption text-grey q-mb-md">
             Created by <strong>{{ trip.createdBy }}</strong>
-          </div>
-          <div class="row q-col-gutter-sm">
+          </div> -->
+          <div v-if="tripMemberList.length" class="row q-col-gutter-sm">
             <q-chip
-              v-for="member in trip.members"
-              :key="member"
+              v-for="member in tripMemberList"
+              :key="member.uid || member.email || 'unknown'"
               color="secondary"
               text-color="white"
-              icon="person"
-              class="q-mr-sm"
+              class="q-mr-sm q-mb-sm"
+              removable
+              @remove="removeMember(member.uid)"
             >
-              {{ member }}
+              <q-avatar>
+                <img v-if="member.photoURL" :src="member.photoURL" alt="Avatar" />
+                <q-icon v-else name="person" />
+              </q-avatar>
+
+              <div class="row">
+                <div class="text-weight-medium">{{ member.displayName || 'Unnamed' }}</div>
+                &nbsp;&nbsp;
+                <div class="text-caption">{{ member.email }}</div>
+              </div>
             </q-chip>
+          </div>
+          <div v-else class="text-grey text-h5 row items-center q-gutter-sm q-mt-sm">
+            <q-icon name="group_off" size="20px" />
+            <span>No members added</span>
           </div>
         </q-tab-panel>
 
@@ -189,12 +203,15 @@ import { useRoute, useRouter } from 'vue-router';
 import { useQuasar, date, Notify } from 'quasar';
 import { QPopupProxy } from 'quasar';
 import type { Trip } from '../store/types';
+import { useAuthStore } from 'src/modules/auth/store';
+import type { UserProfile } from '../../auth/store/types';
 
 const route = useRoute();
 
 const router = useRouter();
 const $q = useQuasar();
 const tripStore = useTripStore();
+const authStore = useAuthStore();
 
 const startDatePopup = ref<InstanceType<typeof QPopupProxy> | null>(null);
 const endDatePopup = ref<InstanceType<typeof QPopupProxy> | null>(null);
@@ -207,13 +224,42 @@ const originalTrip = ref<Trip>();
 const success = ref<boolean>(false);
 const message = ref<string>('');
 
+const tripMemberList = computed(
+  () =>
+    (trip.value?.members || [])
+      .map((uid) => authStore.allUsers?.find((user) => user.uid === uid))
+      .filter(Boolean) as Partial<UserProfile>[],
+);
 onMounted(() => {
   id.value = route.params.id;
   originalTrip.value = JSON.parse(JSON.stringify(trip.value));
+  // tripMemberList.value = trip.value.members
+  //   .map((uid) => authStore.allUsers?.find((user) => user.uid === uid))
+  //   .filter(Boolean) as Partial<UserProfile>[];
 });
 
 function formatDate(ts: number) {
   return date.formatDate(new Date(ts), 'YYYY MMM D, HH:mm');
+}
+
+async function updateTripDetails(id: string, payload: object) {
+  const response = await tripStore.updateTrip(id, payload);
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+  });
+}
+
+async function removeMember(memberId: string | undefined) {
+  const filterMembers = tripStore.activeTrip?.members.filter((m) => m !== memberId);
+  const filterInvolvedUsers = tripStore.activeTrip?.involvedUsers.filter((m) => m !== memberId);
+  const payload = {
+    members: filterMembers,
+    involvedUsers: filterInvolvedUsers,
+  };
+  await updateTripDetails(id.value, payload);
 }
 
 function copyInviteCode() {

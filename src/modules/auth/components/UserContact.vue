@@ -137,6 +137,7 @@ function addContact(user: UserProfile) {
   }
 
   const newContact: Contact = {
+    uid: user.uid,
     name: user.displayName,
     email: user.email,
     photoURL: user.photoURL,
