@@ -25,7 +25,7 @@
           @close="showAddTripPopup = false"
         />
       </div>
-      <SwipeCard :cards="tripStore.trips || []" />
+      <SwipeCard :cards="userTrips || []" />
     </div>
     <div v-else class="absolute-full flex flex-center bg-transparent">
       <q-spinner-ball color="primary" size="lg" />
@@ -50,6 +50,7 @@ const tripStore = useTripStore();
 const allUsers = ref<UserProfile[]>();
 
 const showAddTripPopup = ref(false);
+const userTrips = ref();
 const onAddClick = () => {
   showAddTripPopup.value = true;
 };
@@ -108,7 +109,9 @@ onMounted(async () => {
   await tripStore.fetchTrips({});
   await authStore.fetchAllUser();
   allUsers.value = authStore.allUsers?.filter((u) => u.email !== authStore.user?.email);
-
+  userTrips.value = tripStore.trips.filter((trip) =>
+    trip.involvedUsers.includes(authStore.profile!.uid),
+  );
   loading.value = false;
 });
 </script>

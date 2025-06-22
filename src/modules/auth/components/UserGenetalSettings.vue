@@ -68,7 +68,7 @@
             </q-item-section>
             <q-item-section>
               <q-item-label>Edit Profile</q-item-label>
-              <q-item-label caption>Update your name, email, or photo</q-item-label>
+              <q-item-label caption>Update your name, address, or photo</q-item-label>
             </q-item-section>
             <q-item-section side>
               <q-icon name="chevron_right" />
@@ -97,6 +97,7 @@
             @keyup.enter="saveEditedProfile"
           />
           <!-- <q-input dense v-model="userData.email" label="Email" class="q-mt-sm" /> -->
+          <q-input dense v-model="userData.address" label="Address" class="q-mt-sm" />
           <q-input dense v-model="userData.photoURL" label="Photo URL" class="q-mt-sm" />
         </q-card-section>
 

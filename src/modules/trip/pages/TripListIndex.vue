@@ -170,7 +170,8 @@ const fetchTripsPage = async () => {
   });
 
   if (response.success && response.data) {
-    trips.value = response.data;
+    const uid = authStore.profile!.uid;
+    trips.value = response.data.filter((data) => data.involvedUsers.includes(uid));
     lastVisibleDoc.value = response.lastVisibleDoc ?? null;
     totalItems.value = page.value * rowsPerPage.value + (response.hasMore ? 1 : 0);
   } else {

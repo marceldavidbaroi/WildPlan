@@ -130,22 +130,33 @@ export async function logout(this: AuthState): Promise<StateResponse> {
   }
 }
 
-export function initAuth(this: AuthState) {
-  AuthService.subscribeToAuthState((user: User | null) => {
-    this.user = user;
-
-    if (user) {
-      void (async () => {
+export function initAuth(this: AuthState): Promise<void> {
+  return new Promise((resolve) => {
+    AuthService.subscribeToAuthState((user: User | null) => {
+      (async () => {
         try {
-          this.profile = (await UserProfileService.fetchUserProfile(user)).profile;
+          this.user = user;
+
+          if (user) {
+            const result = await UserProfileService.fetchUserProfile(user);
+            this.profile = result.profile;
+            this.initialized = true;
+          } else {
+            this.profile = null;
+            this.initialized = false;
+          }
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           this.profile = null;
+          this.initialized = false;
+        } finally {
+          resolve(); // resolve the Promise after first auth update
         }
-      })();
-    } else {
-      this.profile = null;
-    }
+      })().catch((err) => {
+        console.error('Async IIFE error:', err);
+        resolve(); // still resolve to prevent hanging Promise
+      });
+    });
   });
 }
 

@@ -27,17 +27,16 @@ const router = createRouter({
 });
 
 // 🔐 Global route guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  // if (!authStore.initialized) {
-  //   authStore.initAuth(); // ensure initAuth resolves before continuing
-  // }
+  if (!authStore.initialized) {
+    await authStore.initAuth(); // ✅ async + updates initialized
+  }
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
 
   if (requiresAuth && !authStore.isAuthenticated) {
-    // ❌ Redirect to unauthorized instead of login
     return next({ path: '/unauthorized' });
   }
 
