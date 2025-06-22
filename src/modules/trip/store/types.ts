@@ -2,6 +2,23 @@
 
 import type { QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
 
+// Define allowed roles (string literal union)
+export type TripRole =
+  | 'admin'
+  | 'invitor'
+  | 'tripPlanner'
+  | 'packingManager'
+  | 'taskOrganizer'
+  | 'budgetOrganizer'
+  | 'member'
+  | 'guest';
+
+// Map userId to array of roles (a user can have multiple roles)
+export interface TripRoles {
+  uid: string;
+  role: TripRole[];
+}
+
 // Core Location Interface
 export interface TripLocation {
   name: string;
@@ -17,6 +34,7 @@ export interface TripCreateData {
   endDate: string;
   createdBy: string;
   members: string[];
+  roles?: TripRoles[]; // <-- add roles here as optional
   inviteCode?: string | undefined;
   photoURL?: string | undefined;
   status: 'upcoming' | 'completed' | 'cancelled';
@@ -31,15 +49,16 @@ export interface TripFromFirestore {
   endDate: string;
   createdBy: string;
   members: string[];
+  roles?: TripRoles[]; // <-- add roles mapping here
   involvedUsers: string[];
   inviteCode?: string;
   photoURL?: string;
   status: 'upcoming' | 'completed' | 'cancelled';
-  createdAt: Timestamp; // This is the key difference
-  updatedAt: Timestamp; // This is the key difference
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
-// 2. Interface for a Trip document as RETRIEVED from Firestore
+// 2. Interface for a Trip document as RETRIEVED from Firestore (after timestamp conversion)
 export interface Trip {
   id: string;
   name: string;
@@ -48,7 +67,8 @@ export interface Trip {
   endDate: string;
   createdBy: string;
   members: string[];
-  involvedUsers: string[]; // This array contains creator's UID + all member UIDs
+  roles?: TripRoles[]; // <-- add roles mapping here
+  involvedUsers: string[];
   inviteCode?: string | undefined;
   photoURL?: string | undefined;
   status: 'upcoming' | 'completed' | 'cancelled';

@@ -23,6 +23,7 @@ import type {
   TripCreateData,
   FetchTripsOptions,
   PaginatedTripsResponse,
+  TripRoles,
 } from '../store/types'; // Make sure this path is correct
 
 const tripsCollection = collection(db, 'trips');
@@ -76,11 +77,23 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
 
     const involvedUsers = [...new Set([tripData.createdBy, ...tripData.members])];
 
+    // Build roles object
+    const roles: TripRoles[] = [];
+    roles.push({
+      uid: tripData.createdBy,
+      role: ['admin'],
+    });
+
+    for (const memberId of tripData.members) {
+      roles.push({ uid: memberId, role: ['member'] });
+    }
+
     const tripToSave = {
       ...tripData,
       name_lowercase: tripData.name.toLowerCase(), // Add this line
       involvedUsers: involvedUsers,
       archived: false,
+      roles: roles, // <-- set full roles map here
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };

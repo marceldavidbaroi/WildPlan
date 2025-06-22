@@ -6,7 +6,7 @@
         <div class="banner-overlay column justify-end">
           <div class="row justify-between items-center q-px-md q-pt-md">
             <div class="text-h5 text-bold text-white">{{ trip?.name }}</div>
-            <div v-if="isCreator" class="row">
+            <div v-if="isEditor" class="row">
               <q-btn-dropdown
                 color="white"
                 :label="selectedStatusLabel"
@@ -294,7 +294,7 @@ const fallbackImage = 'https://cdn.quasar.dev/img/parallax2.jpg';
 
 const id = ref();
 const showPhotoDialog = ref<boolean>(false);
-const isCreator = ref<boolean>(false);
+const isEditor = ref<boolean>(false);
 const showMemberTable = ref<boolean>(false);
 const showMemberDropdown = ref<boolean>(false);
 const selectedMembers = ref<string[]>();
@@ -314,7 +314,13 @@ onMounted(async () => {
   await tripStore.fetchTrip(id.value);
   await authStore.fetchAllUser();
   selectedStatus.value = tripStore.activeTrip?.status;
-  isCreator.value = authStore.profile?.uid === tripStore.activeTrip?.createdBy;
+  // find user role
+  const userId = authStore.profile?.uid;
+  const roles = tripStore.activeTrip?.roles || [];
+  const userRole = roles?.filter((r) => r.uid === userId);
+  console.log('userRolse', userRole[0]?.role);
+
+  isEditor.value = !(userRole[0]?.role.includes('member') || userRole[0]?.role.includes('guest'));
 
   memberRows.value = authStore.allUsers?.filter((user) =>
     tripStore.activeTrip?.members.includes(user.uid),
@@ -369,9 +375,12 @@ const columns = [
 async function deleteMember(memberId: string) {
   const filterMembers = tripStore.activeTrip?.members.filter((m) => m !== memberId);
   const filterInvolvedUsers = tripStore.activeTrip?.involvedUsers.filter((m) => m !== memberId);
+  const existingRoles = tripStore.activeTrip?.roles;
+  const newRoles = existingRoles?.filter((r) => r.uid !== memberId);
   const payload = {
     members: filterMembers,
     involvedUsers: filterInvolvedUsers,
+    roles: newRoles,
   };
   await updateTripDetails(id.value, payload);
 }
@@ -426,6 +435,10 @@ async function addMembers() {
   const existingMembers = tripStore.activeTrip?.members || [];
   const existingInvolvedUsers = tripStore.activeTrip?.involvedUsers || [];
   const newMembers = selectedMembers.value || [];
+  const existingRoles = tripStore.activeTrip?.roles || [];
+  for (const member of newMembers) {
+    existingRoles.push({ uid: member, role: ['member'] });
+  }
 
   // Merge and remove duplicates
   const combinedMembers = Array.from(new Set([...existingMembers, ...newMembers]));
@@ -434,6 +447,7 @@ async function addMembers() {
   const payload = {
     members: combinedMembers,
     involvedUsers: combinedInvolvedUsers,
+    roles: existingRoles,
   };
 
   console.log('Combined members payload:', payload);
