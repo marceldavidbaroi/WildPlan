@@ -111,7 +111,10 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import type { UserProfile } from '../store/types'; // Import from your store types
+import type { UserProfile } from '../store/types';
+import { useQuasar } from 'quasar';
+
+const $q = useQuasar();
 
 const props = defineProps<{
   data: Partial<UserProfile>;
@@ -142,13 +145,26 @@ function editProfile() {
   showEditDialog.value = true;
 }
 function onThemeChange(val: string) {
+  let themeColor = null;
+  if (val === 'datk') {
+    $q.dark.set(true);
+    themeColor = val;
+  } else if (val === 'light') {
+    $q.dark.set(false);
+    themeColor = val;
+  } else {
+    const systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    themeColor = systemMediaQuery.matches ? 'dark' : 'light';
+
+    $q.dark.set(systemMediaQuery.matches);
+  }
+
   const payload = {
     preferences: {
       ...userData.value.preferences,
-      theme: val,
+      theme: themeColor,
     },
   };
-  console.log(payload);
   emit('theme', payload);
 }
 
@@ -159,15 +175,12 @@ function onChangeNotification(val: boolean) {
       notifications: val,
     },
   };
-  console.log(payload);
 
   emit('notification', payload);
 }
 function saveEditedProfile() {
   userData.value = { ...userData.value };
-  console.log(userData.value);
   showEditDialog.value = false;
-  console.log(userData.value);
   emit('saveProfile', userData.value);
 }
 </script>

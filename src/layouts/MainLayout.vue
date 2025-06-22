@@ -65,7 +65,7 @@
       </q-scroll-area>
     </q-drawer>
 
-    <q-page-container style="background-color: #f5f1e9">
+    <q-page-container :class="[$q.dark.isActive ? 'bg-color--dark' : 'bg-color--light', 'q-pa-md']">
       <router-view />
     </q-page-container>
   </q-layout>
@@ -76,7 +76,9 @@ import { ref } from 'vue';
 import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
 import { useAuthStore } from 'src/modules/auth/store';
 const authStore = useAuthStore();
+import { useQuasar } from 'quasar';
 
+const $q = useQuasar();
 const miniState = ref(true);
 const linksList: EssentialLinkProps[] = [
   {
@@ -156,5 +158,11 @@ function toggleLeftDrawer() {
   -webkit-backdrop-filter: blur(10px); /* for Safari */
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.bg-color--dark {
+  background-color: #2e2e2e;
+}
+.bg-color--light {
+  background-color: #f5f1e9;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <q-page padding>
+  <q-page padding class="bg-transparent">
     <q-btn-group unelevated>
       <q-btn
         icon="settings"
@@ -17,7 +17,7 @@
 
     <div v-if="generalSettings">
       <UserSettings
-        :data="currentUserData ?? {}"
+        :data="authStore.profile ?? {}"
         :loading="authStore.loading"
         @notification="handleSaveProfile"
         @theme="handleSaveProfile"
@@ -40,7 +40,7 @@ import type { UserProfile, Contact } from '../store/types';
 import UserSettings from '../components/UserGenetalSettings.vue'; // Adjust path as needed
 import { useQuasar } from 'quasar';
 import { useAuthStore } from '../store';
-import ContactList from '../components/userContact.vue';
+import ContactList from '../components/UserContact.vue';
 const authStore = useAuthStore();
 
 const $q = useQuasar();
@@ -48,9 +48,11 @@ const generalSettings = ref<boolean>(true);
 const allUsers = ref<UserProfile[]>();
 
 onMounted(async () => {
-  console.log(authStore.profile?.contacts);
+  console.log(authStore.profile?.preferences.theme);
   await authStore.fetchAllUser();
   allUsers.value = authStore.allUsers?.filter((u) => u.email !== currentUserData.value?.email);
+  $q.dark.set(authStore.profile?.preferences.theme === 'dark');
+  console.log($q.dark.isActive);
 });
 
 // Mock user data in the parent component
