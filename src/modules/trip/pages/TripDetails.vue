@@ -212,6 +212,36 @@
             <div class="text-caption">{{ formatDateTime(trip?.updatedAt) }}</div>
           </div>
         </div>
+
+        <div class="col-12 col-sm-6 q-mb-lg row items-center q-gutter-md">
+          <q-icon name="place" />
+          <div>
+            <div class="text-subtitle2 text-bold">Location</div>
+            <div class="text-caption">
+              <div v-if="authStore.profile?.uid === tripStore.activeTrip?.createdBy">
+                <MapPicker :initial-location="initialLocation" @picked="onLocationPicked" />
+              </div>
+              <div class="">
+                <div class="">
+                  {{ tripStore.activeTrip?.location.name || 'Unknown Location' }}
+                </div>
+                <div class="row q-mt-sm items-center">
+                  <div class="col-auto">
+                    <q-icon name="place" color="primary" class="q-mr-xs" />
+                  </div>
+                  <div class="col">
+                    <div class="text-caption text-grey-8">
+                      Latitude: {{ tripStore.activeTrip?.location.lat }}
+                    </div>
+                    <div class="text-caption text-grey-8">
+                      Longitude: {{ tripStore.activeTrip?.location.lng }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- for bg image  -->
@@ -253,6 +283,7 @@ import { useTripStore } from '../store';
 import { useRoute, useRouter } from 'vue-router';
 import { date, Notify } from 'quasar';
 import { useAuthStore } from 'src/modules/auth/store';
+import MapPicker from 'src/components/MapPicker.vue';
 const authStore = useAuthStore();
 
 const route = useRoute();
@@ -269,6 +300,7 @@ const showMemberDropdown = ref<boolean>(false);
 const selectedMembers = ref<string[]>();
 const memberRows = ref();
 const nonMembers = ref();
+const initialLocation = ref();
 
 onMounted(async () => {
   const rawId = route.params.id;
@@ -294,6 +326,9 @@ onMounted(async () => {
 
   console.log('this are all the members', selectedMembers.value?.flat());
   console.log(tripStore.activeTrip);
+
+  initialLocation.value = tripStore.activeTrip?.location;
+  console.log(initialLocation);
 });
 
 watch(
@@ -444,6 +479,22 @@ async function selectStatus(status: 'upcoming' | 'completed' | 'cancelled') {
     status: status,
   };
   await updateTripDetails(id.value, payload);
+}
+
+async function onLocationPicked(coords: object) {
+  console.log('Selected location:', coords);
+  const newLocation = {
+    name: tripStore.activeTrip?.location.name,
+    ...coords,
+  };
+  console.log(newLocation);
+  const payload = {
+    location: newLocation,
+  };
+
+  await updateTripDetails(id.value, payload);
+  initialLocation.value = newLocation;
+  // e.g., save to form, update store, etc.
 }
 </script>
 
