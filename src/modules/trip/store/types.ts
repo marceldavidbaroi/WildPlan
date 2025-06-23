@@ -41,6 +41,7 @@ export interface TripCreateData {
   startDate: string;
   endDate: string;
   createdBy: string;
+  isPublic: boolean;
   members: string[];
   joinRquests?: joinRequest[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles here as optional
@@ -57,6 +58,7 @@ export interface TripFromFirestore {
   startDate: string;
   endDate: string;
   createdBy: string;
+  isPublic: boolean;
   members: string[];
   joinRquests?: joinRequest[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles mapping here
@@ -76,6 +78,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   createdBy: string;
+  isPublic: boolean;
   members: string[];
   joinRquests?: joinRequest[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles mapping here

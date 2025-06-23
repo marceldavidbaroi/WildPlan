@@ -38,6 +38,13 @@
               <q-btn
                 flat
                 round
+                :icon="trip?.isPublic ? 'public' : 'lock_person'"
+                color="white"
+                @click="onVisibilityChange"
+              />
+              <q-btn
+                flat
+                round
                 icon="add_photo_alternate"
                 color="white"
                 @click="showPhotoDialog = true"
@@ -410,6 +417,13 @@ function getStatusColor(status?: string) {
 
 async function openSettings() {
   await router.push({ path: `/trip/settings/${id.value}` });
+}
+
+async function onVisibilityChange() {
+  const payload = {
+    isPublic: tripStore.activeTrip?.isPublic ? false : true,
+  };
+  await updateTripDetails(id.value, payload);
 }
 
 async function updateTripDetails(id: string, payload: object) {

@@ -64,12 +64,6 @@ function handleServiceError<T>(functionName: string, error: unknown): ServiceRes
 
 // --- Service Functions ---
 
-/**
- * Creates a new trip document in Firestore.
- * Calculates 'involvedUsers' from 'createdBy' and 'members' before saving.
- * @param tripData The data for the new trip (without ID or timestamps).
- * @returns A ServiceResponse containing the newly created Trip object.
- */
 export async function createTrip(tripData: TripCreateData): Promise<ServiceResponse<Trip>> {
   try {
     const newTripDocRef = doc(tripsCollection);
@@ -94,6 +88,7 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
       name_lowercase: tripData.name.toLowerCase(), // Add this line
       involvedUsers: involvedUsers,
       archived: false,
+      isPublic: false,
       roles: roles, // <-- set full roles map here
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -119,11 +114,6 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
   }
 }
 
-/**
- * Fetches a single trip by its ID.
- * @param tripId The ID of the trip to fetch.
- * @returns A ServiceResponse containing the Trip object or undefined if not found/error.
- */
 export async function fetchTrip(tripId: string): Promise<ServiceResponse<Trip>> {
   try {
     const tripDocRef = doc(tripsCollection, tripId);
@@ -150,16 +140,6 @@ export async function fetchTrip(tripId: string): Promise<ServiceResponse<Trip>> 
   }
 }
 
-/**
- * Updates an existing trip document.
- * IMPORTANT: If 'createdBy' or 'members' are updated via this function,
- * 'involvedUsers' must also be re-calculated to maintain data integrity.
- * This is most robustly handled by a Cloud Function onUpdate trigger.
- * If done client-side, ensure `updateData` for `involvedUsers` is also calculated.
- * @param tripId The ID of the trip to update.
- * @param tripData The partial data to update.
- * @returns A ServiceResponse indicating success or failure.
- */
 export async function updateTrip(
   tripId: string,
   tripData: Partial<TripCreateData>,
@@ -167,9 +147,6 @@ export async function updateTrip(
   try {
     const tripDocRef = doc(tripsCollection, tripId);
 
-    // If you enable the commented-out logic below, ensure you fetch the existing trip
-    // and recalculate `involvedUsers` correctly when `members` or `createdBy` change.
-    // For now, it just updates the provided fields.
     await updateDoc(tripDocRef, {
       ...tripData,
       updatedAt: serverTimestamp(),
@@ -184,11 +161,6 @@ export async function updateTrip(
   }
 }
 
-/**
- * Deletes a trip document.
- * @param tripId The ID of the trip to delete.
- * @returns A ServiceResponse indicating success or failure.
- */
 export async function deleteTrip(tripId: string): Promise<ServiceResponse<void>> {
   try {
     const tripDocRef = doc(tripsCollection, tripId);
@@ -203,13 +175,6 @@ export async function deleteTrip(tripId: string): Promise<ServiceResponse<void>>
   }
 }
 
-/**
- * Fetches trips from Firestore based on provided options, where the user is involved (creator or member).
- * This function incorporates filtering, sorting, searching, and pagination.
- * It's designed for "load more" / infinite scroll UI patterns.
- * @param options Filtering, sorting, searching, and pagination parameters.
- * @returns A PaginatedTripsResponse containing the fetched trips and pagination info.
- */
 export async function fetchTrips(options: FetchTripsOptions): Promise<PaginatedTripsResponse> {
   const {
     userInvolvedId,
