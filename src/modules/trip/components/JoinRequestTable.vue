@@ -1,11 +1,19 @@
 <template>
-  <q-table :rows="rows" :columns="columns" row-key="uid" flat bordered dense class="q-mt-md">
-    <template v-slot:body-cell-actions="props">
-      <q-td :props="props">
-        <q-btn dense color="secondary" label="Approve" size="sm" @click="emitApprove(props.row)" />
-      </q-td>
-    </template>
-  </q-table>
+  <div class="q-pa-md">
+    <q-table :rows="rows" :columns="columns" row-key="uid" flat bordered dense class="q-mt-md">
+      <template v-slot:body-cell-actions="props">
+        <q-td :props="props">
+          <q-btn
+            dense
+            color="secondary"
+            label="Approve"
+            size="sm"
+            @click="emitApprove(props.row)"
+          />
+        </q-td>
+      </template>
+    </q-table>
+  </div>
 </template>
 
 <script setup lang="ts">
