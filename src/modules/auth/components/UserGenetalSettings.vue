@@ -147,7 +147,8 @@ function editProfile() {
 }
 function onThemeChange(val: string) {
   let themeColor = null;
-  if (val === 'datk') {
+
+  if (val === 'dark') {
     $q.dark.set(true);
     themeColor = val;
   } else if (val === 'light') {
@@ -166,6 +167,7 @@ function onThemeChange(val: string) {
       theme: themeColor,
     },
   };
+
   emit('theme', payload);
 }
 

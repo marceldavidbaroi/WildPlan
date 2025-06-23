@@ -1,6 +1,9 @@
 <template>
   <q-layout view="hHh lpR fFf ">
-    <q-header v-if="$q.screen.lt.md" style="background: #f5f1e9">
+    <q-header
+      v-if="$q.screen.lt.md"
+      :class="[$q.dark.isActive ? 'bg-color--dark' : 'bg-color--light', 'q-pa-md']"
+    >
       <q-toolbar>
         <q-btn
           flat
@@ -72,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
 import { useAuthStore } from 'src/modules/auth/store';
 const authStore = useAuthStore();
@@ -148,6 +151,11 @@ const leftDrawerOpen = ref(false);
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
+
+onMounted(() => {
+  // Set initial dark mode based on user preference
+  $q.dark.set(authStore.profile?.preferences.theme === 'dark');
+});
 </script>
 
 <style scoped>
