@@ -230,7 +230,6 @@ export async function fetchTrips(options: FetchTripsOptions): Promise<PaginatedT
   if (statusFilter !== 'all') {
     q = query(q, where('status', '==', statusFilter));
   }
-  console.log(statusFilter);
 
   // Apply search filter with correct ordering to avoid index error
   if (searchQuery) {

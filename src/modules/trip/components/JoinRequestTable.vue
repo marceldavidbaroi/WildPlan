@@ -45,7 +45,6 @@ const columns = [
 ];
 
 function emitApprove(row: joinRequest) {
-  console.log(row);
   emit('approve', row);
 }
 </script>

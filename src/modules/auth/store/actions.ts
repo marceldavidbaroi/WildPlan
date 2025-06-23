@@ -81,7 +81,6 @@ export async function registerWithEmail(
 export async function loginWithGoogle(this: AuthState): Promise<StateResponse> {
   try {
     this.user = await AuthService.loginWithGoogle();
-    console.log('User after Google login:', this.user);
     if (this.user) {
       this.profile = (await UserProfileService.fetchUserProfile(this.user)).profile;
       return {

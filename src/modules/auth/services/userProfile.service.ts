@@ -43,7 +43,6 @@ export async function fetchUserProfile(user: User): Promise<{
       };
 
       await setDoc(userDocRef, defaultProfile);
-      console.log('[fetchUserProfile] Default profile created:', defaultProfile);
 
       return {
         success: true,
@@ -73,10 +72,7 @@ export async function fetchUserProfile(user: User): Promise<{
         photoURL: patchedProfile.photoURL,
         updatedAt: Date.now(),
       });
-      console.log('[fetchUserProfile] Patched missing fields in Firestore.');
     }
-
-    console.log('[fetchUserProfile] Profile fetched:', patchedProfile);
 
     return {
       success: true,
@@ -106,8 +102,6 @@ export async function updateUserProfile(
       ...profileData,
       updatedAt: serverTimestamp(),
     });
-
-    console.log('[updateUserProfile] Profile updated for UID:', uid, profileData);
 
     return {
       success: true,

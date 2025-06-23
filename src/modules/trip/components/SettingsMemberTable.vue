@@ -107,8 +107,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'update-role', payload: object): void;
-  (e: 'role-removed', payload: object): void;
+  (e: 'update-role', payload: unknown): void | Promise<void>;
+  (e: 'role-removed', payload: unknown): void | Promise<void>;
 }>();
 
 const showDialog = ref(false);
@@ -169,8 +169,6 @@ onMounted(() => {
 });
 
 function onSave() {
-  console.log(selectedRole.value, selectedUser.value);
-
   emit('update-role', {
     uid: selectedUser.value,
 

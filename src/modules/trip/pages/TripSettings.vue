@@ -226,7 +226,7 @@ import { useTripStore } from '../store';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar, date, Notify } from 'quasar';
 import { QPopupProxy } from 'quasar';
-import type { Trip, joinRequest } from '../store/types';
+import type { Trip, joinRequest, TripRole } from '../store/types';
 import { useAuthStore } from 'src/modules/auth/store';
 import type { UserProfile } from '../../auth/store/types';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
@@ -279,8 +279,6 @@ const tripMemberList = computed(
 onMounted(() => {
   id.value = route.params.id;
   originalTrip.value = JSON.parse(JSON.stringify(trip.value));
-
-  console.log('Trip Settings mounted', trip.value);
 });
 
 function formatDate(ts: number) {
@@ -299,7 +297,6 @@ async function updateTripDetails(id: string, payload: object) {
 
 async function removeMember(memberId: string | undefined) {
   const memberRole = tripStore.activeTrip?.roles?.find((r) => r.uid === memberId);
-  // console.log(memberRole.role.includes('member'));
   if (!memberRole!.role.includes('member')) {
     Notify.create({
       position: 'top',
@@ -353,9 +350,7 @@ async function handleDelete() {
   await router.push({ path: '/trip' });
 }
 
-function handleCancel() {
-  console.log('Cancelled');
-}
+function handleCancel() {}
 
 const onCancle = () => {
   if (!originalTrip.value) return;
@@ -401,11 +396,8 @@ const onSave = async () => {
   });
 };
 
-async function updateRole(val: { uid: string; role: string }) {
-  console.log('update role ', val);
-
+async function updateRole(val: { uid: string; role: TripRole }): Promise<void> {
   const roles = tripStore.activeTrip?.roles || [];
-  console.log('previous roles', roles);
 
   const existingRole = roles.find((r) => r.uid === val.uid);
 
@@ -426,17 +418,13 @@ async function updateRole(val: { uid: string; role: string }) {
       roles: roles,
     };
 
-    console.log('payload', payload);
     await updateTripDetails(id.value, payload);
   }
 }
 
 async function removeRole(val: { uid: string; role: string }) {
-  console.log('remove role', val);
-
   const roles = tripStore.activeTrip?.roles || [];
   const existingRole = roles.find((r) => r.uid === val.uid);
-  console.log('existingRole', existingRole?.role.length);
 
   if (existingRole) {
     existingRole.role = existingRole.role.filter((r) => r !== val.role);

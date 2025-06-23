@@ -82,8 +82,6 @@ onMounted(() => {
   //   photoURL.value = user.photoURL || '';
   //   email.value = user.email || '';
   // }
-
-  console.log(authStore.user);
 });
 
 const onSubmit = async () => {

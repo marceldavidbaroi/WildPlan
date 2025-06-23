@@ -320,7 +320,6 @@ onMounted(async () => {
   const userId = authStore.profile?.uid;
   const roles = tripStore.activeTrip?.roles || [];
   const userRole = roles?.filter((r) => r.uid === userId);
-  console.log('userRolse', userRole[0]?.role);
 
   isEditor.value = !(userRole[0]?.role.includes('member') || userRole[0]?.role.includes('guest'));
 
@@ -332,11 +331,7 @@ onMounted(async () => {
     (user) => !tripStore.activeTrip?.involvedUsers.includes(user.uid),
   );
 
-  console.log('this are all the members', selectedMembers.value?.flat());
-  console.log(tripStore.activeTrip);
-
   initialLocation.value = tripStore.activeTrip?.location;
-  console.log(initialLocation);
 });
 
 watch(
@@ -452,7 +447,6 @@ async function addMembers() {
     roles: existingRoles,
   };
 
-  console.log('Combined members payload:', payload);
   await updateTripDetails(id.value, payload);
 
   showMemberDropdown.value = false;
@@ -498,12 +492,10 @@ async function selectStatus(status: 'upcoming' | 'completed' | 'cancelled') {
 }
 
 async function onLocationPicked(coords: object) {
-  console.log('Selected location:', coords);
   const newLocation = {
     name: tripStore.activeTrip?.location.name,
     ...coords,
   };
-  console.log(newLocation);
   const payload = {
     location: newLocation,
   };

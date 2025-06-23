@@ -48,11 +48,9 @@ const generalSettings = ref<boolean>(true);
 const allUsers = ref<UserProfile[]>();
 
 onMounted(async () => {
-  console.log(authStore.profile?.preferences.theme);
   await authStore.fetchAllUser();
   allUsers.value = authStore.allUsers?.filter((u) => u.email !== currentUserData.value?.email);
   $q.dark.set(authStore.profile?.preferences.theme === 'dark');
-  console.log($q.dark.isActive);
 });
 
 // Mock user data in the parent component
@@ -63,7 +61,6 @@ const currentUserData = ref<Partial<UserProfile> | null>(authStore.profile);
 const handleSaveProfile = async (updatedData: UserProfile) => {
   // This could be a separate API call for profile updates
   const response = await authStore.updateProfile(updatedData);
-  console.log(updatedData);
   currentUserData.value = { ...updatedData };
   $q.notify({
     position: 'top',
@@ -73,9 +70,7 @@ const handleSaveProfile = async (updatedData: UserProfile) => {
 };
 
 const onUpdateContact = async (val: Contact[]) => {
-  console.log(val);
   const response = await authStore.updateProfile({ contacts: val });
-  console.log(response);
   currentUserData.value = { ...{ contacts: val } };
   $q.notify({
     position: 'top',
@@ -98,8 +93,6 @@ const handleRemove = async (val: string) => {
     message: response.message,
     color: response.success ? 'info' : 'negative',
   });
-
-  console.log(updatedContacts);
 };
 </script>
 

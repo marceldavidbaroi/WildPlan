@@ -31,5 +31,5 @@ const app: FirebaseApp = initializeApp(firebaseConfig);
 // Initialize Firebase services with explicit types
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
-console.log('Firebase initialized with config:', firebaseConfig);
+// console.log('Firebase initialized with config:', firebaseConfig);
 export { app, auth, db };
