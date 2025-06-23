@@ -101,7 +101,7 @@ async function onJoin() {
 
   const joinRquests = [...(trip.value?.joinRquests || [])];
 
-  if (joinRquests.includes(authStore.profile!.uid)) {
+  if (joinRquests.some((u) => u.uid === authStore.profile!.uid)) {
     Notify.create({
       type: 'info',
       message: 'You have already requested to join this trip.',
@@ -110,7 +110,11 @@ async function onJoin() {
     return;
   }
 
-  joinRquests.push(authStore.profile!.uid);
+  joinRquests.push({
+    uid: authStore.profile!.uid,
+    displayName: authStore.profile!.displayName || 'Unknown User',
+    email: authStore.profile!.email || 'No Email',
+  });
 
   const payload = {
     joinRquests,

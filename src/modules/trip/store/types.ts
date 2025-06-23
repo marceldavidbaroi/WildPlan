@@ -28,6 +28,12 @@ export interface TripLocation {
   lng?: number | undefined;
 }
 
+export interface joinRequest {
+  uid: string;
+  displayName: string;
+  email: string;
+}
+
 // 1. Interface for Data when CREATING a trip
 export interface TripCreateData {
   name: string;
@@ -36,7 +42,7 @@ export interface TripCreateData {
   endDate: string;
   createdBy: string;
   members: string[];
-  joinRquests?: string[]; // Optional, for users who want to join but haven't been added yet
+  joinRquests?: joinRequest[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles here as optional
   inviteCode?: string | undefined;
   photoURL?: string | undefined;
@@ -52,7 +58,7 @@ export interface TripFromFirestore {
   endDate: string;
   createdBy: string;
   members: string[];
-  joinRquests?: string[]; // Optional, for users who want to join but haven't been added yet
+  joinRquests?: joinRequest[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles mapping here
   involvedUsers: string[];
   inviteCode?: string;
@@ -71,7 +77,7 @@ export interface Trip {
   endDate: string;
   createdBy: string;
   members: string[];
-  joinRquests?: string[]; // Optional, for users who want to join but haven't been added yet
+  joinRquests?: joinRequest[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles mapping here
   involvedUsers: string[];
   inviteCode?: string | undefined;

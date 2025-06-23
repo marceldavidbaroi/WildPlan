@@ -98,10 +98,15 @@
               @role-removed="removeRole"
             />
           </div>
+          <div class="text-h6 q-mb-sm">Join Request</div>
+          <div>
+            <JoinRequestTable
+              :rows="tripStore.activeTrip?.joinRquests || []"
+              @approve="approveRequest"
+            />
+          </div>
           <div class="text-h6 q-mb-sm">Trip Members</div>
-          <!-- <div class="text-caption text-grey q-mb-md">
-            Created by <strong>{{ trip.createdBy }}</strong>
-          </div> -->
+
           <div v-if="tripMemberList.length" class="row q-col-gutter-sm">
             <q-chip
               v-for="member in tripMemberList"
@@ -221,11 +226,12 @@ import { useTripStore } from '../store';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar, date, Notify } from 'quasar';
 import { QPopupProxy } from 'quasar';
-import type { Trip } from '../store/types';
+import type { Trip, joinRequest } from '../store/types';
 import { useAuthStore } from 'src/modules/auth/store';
 import type { UserProfile } from '../../auth/store/types';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
 import SettingsMemberTable from '../components/SettingsMemberTable.vue';
+import JoinRequestTable from '../components/JoinRequestTable.vue';
 
 const route = useRoute();
 
@@ -273,21 +279,8 @@ const tripMemberList = computed(
 onMounted(() => {
   id.value = route.params.id;
   originalTrip.value = JSON.parse(JSON.stringify(trip.value));
-  // administratorMembers.value =
-  //   tripStore.activeTrip?.roles
-  //     ?.filter((r) => r.adminestrator === true)
-  //     .map((r) => {
-  //       const user = authStore.allUsers!.find((u) => u.uid === r.uid);
-  //       return {
-  //         uid: r.uid,
-  //         role: r.role,
-  //         photoURL: user?.photoURL || '',
-  //         email: user?.email || 'Unknown',
-  //         displayName: user?.displayName || 'Unknown',
-  //       };
-  //     }) || [];
 
-  // console.log(administratorMembers.value);
+  console.log('Trip Settings mounted', trip.value);
 });
 
 function formatDate(ts: number) {
@@ -459,6 +452,22 @@ async function removeRole(val: { uid: string; role: string }) {
 
     await updateTripDetails(id.value, payload);
   }
+}
+
+async function approveRequest(val: joinRequest) {
+  const existingInvolvedUsers = tripStore.activeTrip?.involvedUsers || [];
+  const existingMembers = tripStore.activeTrip?.members || [];
+  const existingJoinRequests = tripStore.activeTrip?.joinRquests || [];
+
+  existingInvolvedUsers.push(val.uid);
+  existingMembers.push(val.uid);
+  const updatedJoinRequests = existingJoinRequests.filter((r) => r.uid !== val.uid);
+  const payload = {
+    involvedUsers: existingInvolvedUsers,
+    members: existingMembers,
+    joinRquests: updatedJoinRequests,
+  };
+  await updateTripDetails(id.value, payload);
 }
 </script>
 
