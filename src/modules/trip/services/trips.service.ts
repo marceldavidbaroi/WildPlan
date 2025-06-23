@@ -82,10 +82,11 @@ export async function createTrip(tripData: TripCreateData): Promise<ServiceRespo
     roles.push({
       uid: tripData.createdBy,
       role: ['admin'],
+      adminestrator: true,
     });
 
     for (const memberId of tripData.members) {
-      roles.push({ uid: memberId, role: ['member'] });
+      roles.push({ uid: memberId, role: ['member'], adminestrator: false });
     }
 
     const tripToSave = {

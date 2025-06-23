@@ -88,6 +88,16 @@
 
         <!-- MEMBERS -->
         <q-tab-panel name="members">
+          <div class="text-h6 q-mb-sm">Trip Members Role</div>
+          <div>
+            <SettingsMemberTable
+              :rows="administratorMembers"
+              :involvedUsers="tripStore.activeTrip?.involvedUsers || []"
+              :allUsers="authStore.allUsers || []"
+              @update-role="updateRole"
+              @role-removed="removeRole"
+            />
+          </div>
           <div class="text-h6 q-mb-sm">Trip Members</div>
           <!-- <div class="text-caption text-grey q-mb-md">
             Created by <strong>{{ trip.createdBy }}</strong>
@@ -215,6 +225,7 @@ import type { Trip } from '../store/types';
 import { useAuthStore } from 'src/modules/auth/store';
 import type { UserProfile } from '../../auth/store/types';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
+import SettingsMemberTable from '../components/SettingsMemberTable.vue';
 
 const route = useRoute();
 
@@ -235,6 +246,23 @@ const success = ref<boolean>(false);
 const showDeleteConfirmDialog = ref<boolean>(false);
 const message = ref<string>('');
 const verifyText = ref<string>('');
+// const administratorMembers = ref();
+const administratorMembers = computed(() => {
+  return (
+    tripStore.activeTrip?.roles
+      ?.filter((r) => r.adminestrator === true)
+      .map((r) => {
+        const user = authStore.allUsers?.find((u) => u.uid === r.uid);
+        return {
+          uid: r.uid,
+          role: r.role,
+          photoURL: user?.photoURL || '',
+          email: user?.email || 'Unknown',
+          displayName: user?.displayName || 'Unknown',
+        };
+      }) || []
+  );
+});
 
 const tripMemberList = computed(
   () =>
@@ -245,9 +273,21 @@ const tripMemberList = computed(
 onMounted(() => {
   id.value = route.params.id;
   originalTrip.value = JSON.parse(JSON.stringify(trip.value));
-  // tripMemberList.value = trip.value.members
-  //   .map((uid) => authStore.allUsers?.find((user) => user.uid === uid))
-  //   .filter(Boolean) as Partial<UserProfile>[];
+  // administratorMembers.value =
+  //   tripStore.activeTrip?.roles
+  //     ?.filter((r) => r.adminestrator === true)
+  //     .map((r) => {
+  //       const user = authStore.allUsers!.find((u) => u.uid === r.uid);
+  //       return {
+  //         uid: r.uid,
+  //         role: r.role,
+  //         photoURL: user?.photoURL || '',
+  //         email: user?.email || 'Unknown',
+  //         displayName: user?.displayName || 'Unknown',
+  //       };
+  //     }) || [];
+
+  // console.log(administratorMembers.value);
 });
 
 function formatDate(ts: number) {
@@ -265,6 +305,16 @@ async function updateTripDetails(id: string, payload: object) {
 }
 
 async function removeMember(memberId: string | undefined) {
+  const memberRole = tripStore.activeTrip?.roles?.find((r) => r.uid === memberId);
+  // console.log(memberRole.role.includes('member'));
+  if (!memberRole!.role.includes('member')) {
+    Notify.create({
+      position: 'top',
+      type: 'negative',
+      message: 'Cannot remove a member with assigned roles. Please remove their roles first.',
+    });
+    return;
+  }
   const filterMembers = tripStore.activeTrip?.members.filter((m) => m !== memberId);
   const filterInvolvedUsers = tripStore.activeTrip?.involvedUsers.filter((m) => m !== memberId);
   const payload = {
@@ -357,6 +407,59 @@ const onSave = async () => {
     timeout: 3000,
   });
 };
+
+async function updateRole(val: { uid: string; role: string }) {
+  console.log('update role ', val);
+
+  const roles = tripStore.activeTrip?.roles || [];
+  console.log('previous roles', roles);
+
+  const existingRole = roles.find((r) => r.uid === val.uid);
+
+  if (existingRole) {
+    const hasMember = existingRole.role.includes('member');
+    const alreadyHasRole = existingRole.role.includes(val.role);
+
+    if (hasMember) {
+      // Replace 'member' with new role
+      existingRole.role = existingRole.role.filter((r) => r !== 'member');
+      existingRole.role.push(val.role);
+      existingRole.adminestrator = true;
+    } else if (!alreadyHasRole) {
+      existingRole.role.push(val.role);
+    }
+
+    const payload = {
+      roles: roles,
+    };
+
+    console.log('payload', payload);
+    await updateTripDetails(id.value, payload);
+  }
+}
+
+async function removeRole(val: { uid: string; role: string }) {
+  console.log('remove role', val);
+
+  const roles = tripStore.activeTrip?.roles || [];
+  const existingRole = roles.find((r) => r.uid === val.uid);
+  console.log('existingRole', existingRole?.role.length);
+
+  if (existingRole) {
+    existingRole.role = existingRole.role.filter((r) => r !== val.role);
+    if (existingRole?.role.length === 0) {
+      // Remove the entire role entry if no roles left
+      existingRole.role.push('member');
+      existingRole.adminestrator = false;
+    }
+
+    const payload = {
+      roles: tripStore.activeTrip!.roles,
+    };
+
+    await updateTripDetails(id.value, payload);
+  }
+}
 </script>
 
 <style scoped>

@@ -3,6 +3,8 @@
 import type { QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
 
 // Define allowed roles (string literal union)
+
+// Map userId to array of roles (a user can have multiple roles)
 export type TripRole =
   | 'admin'
   | 'invitor'
@@ -13,10 +15,10 @@ export type TripRole =
   | 'member'
   | 'guest';
 
-// Map userId to array of roles (a user can have multiple roles)
 export interface TripRoles {
   uid: string;
-  role: TripRole[];
+  role: TripRole[]; // ✅ Proper array of roles
+  adminestrator: boolean;
 }
 
 // Core Location Interface
@@ -34,6 +36,7 @@ export interface TripCreateData {
   endDate: string;
   createdBy: string;
   members: string[];
+  joinRquests?: string[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles here as optional
   inviteCode?: string | undefined;
   photoURL?: string | undefined;
@@ -49,6 +52,7 @@ export interface TripFromFirestore {
   endDate: string;
   createdBy: string;
   members: string[];
+  joinRquests?: string[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles mapping here
   involvedUsers: string[];
   inviteCode?: string;
@@ -67,6 +71,7 @@ export interface Trip {
   endDate: string;
   createdBy: string;
   members: string[];
+  joinRquests?: string[]; // Optional, for users who want to join but haven't been added yet
   roles?: TripRoles[]; // <-- add roles mapping here
   involvedUsers: string[];
   inviteCode?: string | undefined;

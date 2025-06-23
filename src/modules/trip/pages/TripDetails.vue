@@ -13,6 +13,7 @@
                 text-color="primary"
                 class="q-py-none"
                 size="sm"
+                dense
               >
                 <q-list>
                   <q-item
@@ -26,6 +27,7 @@
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
+              <q-btn flat round icon="share" color="white" @click="onShare" />
               <q-btn
                 flat
                 round
@@ -281,7 +283,7 @@
 import { watch, onMounted, computed, ref } from 'vue';
 import { useTripStore } from '../store';
 import { useRoute, useRouter } from 'vue-router';
-import { date, Notify } from 'quasar';
+import { date, Notify, copyToClipboard } from 'quasar';
 import { useAuthStore } from 'src/modules/auth/store';
 import MapPicker from 'src/components/MapPicker.vue';
 const authStore = useAuthStore();
@@ -437,7 +439,7 @@ async function addMembers() {
   const newMembers = selectedMembers.value || [];
   const existingRoles = tripStore.activeTrip?.roles || [];
   for (const member of newMembers) {
-    existingRoles.push({ uid: member, role: ['member'] });
+    existingRoles.push({ uid: member, role: ['member'], adminestrator: false });
   }
 
   // Merge and remove duplicates
@@ -509,6 +511,30 @@ async function onLocationPicked(coords: object) {
   await updateTripDetails(id.value, payload);
   initialLocation.value = newLocation;
   // e.g., save to form, update store, etc.
+}
+
+function onShare() {
+  const shareData = `${window.location.origin}/trip/join/${id.value}`;
+
+  copyToClipboard(shareData)
+    .then(() => {
+      Notify.create({
+        position: 'top',
+        type: 'positive',
+        message: 'Link copied to clipboard!',
+        timeout: 2000,
+        icon: 'link',
+      });
+    })
+    .catch(() => {
+      Notify.create({
+        position: 'top',
+        type: 'negative',
+        message: 'Failed to copy link.',
+        timeout: 2000,
+        icon: 'error',
+      });
+    });
 }
 </script>
 

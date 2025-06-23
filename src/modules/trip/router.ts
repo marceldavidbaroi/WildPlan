@@ -11,6 +11,11 @@ const authRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('./pages/TripListIndex.vue'),
       },
+      {
+        name: 'trip_join',
+        path: 'join/:id',
+        component: () => import('./pages/TripJoinIndex.vue'),
+      },
 
       {
         name: 'trip_settings',
