@@ -75,7 +75,7 @@ export async function createItineraryEvent(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
-  event: NewItineraryEvent,
+  event?: NewItineraryEvent,
 ): Promise<ServiceResponse<void>> {
   this.isLoading = true;
   this.error = null;
@@ -89,6 +89,7 @@ export async function createItineraryEvent(
   } else {
     this.error = response.message;
   }
+  console.log(response.success);
 
   this.isLoading = false;
   return response;

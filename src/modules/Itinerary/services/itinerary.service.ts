@@ -122,50 +122,52 @@ export async function fetchItineraryDaysForTrip(
 export async function addItineraryEvent(
   tripId: string,
   date: string,
-  newEventData: NewItineraryEvent,
+  newEventData?: NewItineraryEvent,
 ): Promise<ServiceResponse<void>> {
   try {
     const dayDocRef = getItineraryDayDocRef(tripId, date);
     const dayDocSnap = await getDoc(dayDocRef);
 
-    const newEventId = doc(collection(db, 'tempCollectionForId')).id;
+    // 🚫 Exit early if the itinerary day already exists
+    if (dayDocSnap.exists()) {
+      return {
+        success: false,
+        message: 'Itinerary day already exists. Skipping creation.',
+      };
+    }
 
     const now = Timestamp.now();
 
-    // ✅ Use raw milliseconds for timestamps in the array item
-    const fullNewEvent: ItineraryEvent = {
-      ...newEventData,
-      id: newEventId,
-      isCompleted: false,
-      createdAt: now.toMillis(), // 🔥 Use raw number
-      updatedAt: now.toMillis(),
+    // 🔄 Prepare base day doc
+    const newDayItinerary: Omit<TripDayItinerary, 'id'> = {
+      tripId,
+      date,
+      events: [],
+      dailyNotes: '',
+      createdAt: now,
+      updatedAt: now,
     };
 
-    if (dayDocSnap.exists()) {
-      await updateDoc(dayDocRef, {
-        events: arrayUnion(fullNewEvent),
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      const newDayItinerary: Omit<TripDayItinerary, 'id'> = {
-        tripId,
-        date,
-        events: [], // Create first, then update
-        dailyNotes: '',
-        createdAt: now,
-        updatedAt: now,
-      };
+    await setDoc(dayDocRef, newDayItinerary);
 
-      await setDoc(dayDocRef, newDayItinerary);
+    // ✅ Optionally add event if provided
+    if (newEventData) {
+      const newEventId = doc(collection(db, 'tempCollectionForId')).id;
+      const fullNewEvent: ItineraryEvent = {
+        ...newEventData,
+        id: newEventId,
+        isCompleted: false,
+        createdAt: now.toMillis(),
+        updatedAt: now.toMillis(),
+      };
 
       await updateDoc(dayDocRef, {
         events: arrayUnion(fullNewEvent),
       });
     }
-
     return {
       success: true,
-      message: 'Itinerary event added successfully!',
+      message: 'Itinerary day created successfully!',
     };
   } catch (error: unknown) {
     return handleServiceError<void>('addItineraryEvent', error);
