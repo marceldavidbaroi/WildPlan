@@ -69,6 +69,7 @@ function getStatusColor(status: Trip['status']) {
 }
 
 const onCardClick = async (id: string) => {
+  console.log('Card clicked:', id);
   emit('card-click', id);
 };
 </script>

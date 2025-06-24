@@ -55,6 +55,7 @@ export type NewItineraryEvent = Omit<
 export interface ItineraryStoreState {
   currentTripId: string | null;
   itineraryDays: TripDayItinerary[];
+  selectedDay: TripDayItinerary | null;
   isLoading: boolean;
   error: string | null;
 }

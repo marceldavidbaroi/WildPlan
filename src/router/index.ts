@@ -3,11 +3,13 @@ import { useAuthStore } from 'src/modules/auth/store';
 import auth from 'src/modules/auth/router';
 import dashboard from 'src/modules/dashboard/router';
 import trip from 'src/modules/trip/router';
+import itinerary from 'src/modules/Itinerary/router';
 
 const routes: RouteRecordRaw[] = [
   ...auth,
   ...dashboard,
   ...trip,
+  ...itinerary,
 
   {
     path: '/unauthorized',

@@ -3,6 +3,7 @@ import type {
   TripDayItinerary,
   ItineraryStoreState,
   ServiceResponse,
+  NewItineraryEvent,
 } from './types';
 import * as ItineraryService from '../services/itinerary.service';
 import { Timestamp } from 'firebase/firestore';
@@ -64,12 +65,36 @@ export async function fetchItineraryDay(
   } else {
     this.error = response.message;
   }
+  this.selectedDay = response.data || null;
 
   this.isLoading = false;
   return response;
 }
 
-export async function addOrUpdateItineraryEvent(
+export async function createItineraryEvent(
+  this: ItineraryStoreState,
+  tripId: string,
+  date: string,
+  event: NewItineraryEvent,
+): Promise<ServiceResponse<void>> {
+  this.isLoading = true;
+  this.error = null;
+
+  const response = await ItineraryService.addItineraryEvent(tripId, date, event);
+
+  if (response.success) {
+    // Re-fetch day to ensure local state reflects changes
+
+    await ItineraryService.fetchItineraryDay(tripId, date);
+  } else {
+    this.error = response.message;
+  }
+
+  this.isLoading = false;
+  return response;
+}
+
+export async function updateItineraryEvent(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
@@ -78,7 +103,7 @@ export async function addOrUpdateItineraryEvent(
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.addOrUpdateItineraryEvent(tripId, date, event);
+  const response = await ItineraryService.addItineraryEvent(tripId, date, event);
 
   if (response.success) {
     // Re-fetch day to ensure local state reflects changes

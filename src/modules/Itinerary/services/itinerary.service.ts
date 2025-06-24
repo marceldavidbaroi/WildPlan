@@ -19,7 +19,12 @@ import {
 } from 'firebase/firestore';
 import { db } from 'src/boot/firebase';
 
-import type { TripDayItinerary, ItineraryEvent, ServiceResponse } from '../store/types';
+import type {
+  TripDayItinerary,
+  ItineraryEvent,
+  ServiceResponse,
+  NewItineraryEvent,
+} from '../store/types';
 
 /**
  * Helper for consistent error handling across service functions.
@@ -114,61 +119,116 @@ export async function fetchItineraryDaysForTrip(
  * Adds a new event or updates an existing event within a specific day's itinerary.
  * If the day's itinerary document does not exist, it will be created.
  */
-export async function addOrUpdateItineraryEvent(
+export async function addItineraryEvent(
   tripId: string,
   date: string,
-  event: ItineraryEvent,
+  newEventData: NewItineraryEvent,
 ): Promise<ServiceResponse<void>> {
   try {
     const dayDocRef = getItineraryDayDocRef(tripId, date);
     const dayDocSnap = await getDoc(dayDocRef);
 
+    const newEventId = doc(collection(db, 'tempCollectionForId')).id;
+
+    const now = Timestamp.now();
+
+    // ✅ Use raw milliseconds for timestamps in the array item
+    const fullNewEvent: ItineraryEvent = {
+      ...newEventData,
+      id: newEventId,
+      isCompleted: false,
+      createdAt: now.toMillis(), // 🔥 Use raw number
+      updatedAt: now.toMillis(),
+    };
+
     if (dayDocSnap.exists()) {
-      const existingDay = dayDocSnap.data() as TripDayItinerary;
-      const eventIndex = existingDay.events.findIndex((e) => e.id === event.id);
-
-      const updatedEvent = {
-        ...event,
+      await updateDoc(dayDocRef, {
+        events: arrayUnion(fullNewEvent),
         updatedAt: serverTimestamp(),
-      };
-
-      if (eventIndex > -1) {
-        const updatedEvents = [...existingDay.events];
-        updatedEvents[eventIndex] = updatedEvent;
-        await updateDoc(dayDocRef, { events: updatedEvents, updatedAt: serverTimestamp() });
-      } else {
-        const newEvent = {
-          ...event,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-        await updateDoc(dayDocRef, { events: arrayUnion(newEvent), updatedAt: serverTimestamp() });
-      }
+      });
     } else {
-      const newEventWithTimestamps = {
-        ...event,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
       const newDayItinerary: Omit<TripDayItinerary, 'id'> = {
-        tripId: tripId,
-        date: date,
-        events: [newEventWithTimestamps as ItineraryEvent],
+        tripId,
+        date,
+        events: [], // Create first, then update
         dailyNotes: '',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
       };
+
       await setDoc(dayDocRef, newDayItinerary);
+
+      await updateDoc(dayDocRef, {
+        events: arrayUnion(fullNewEvent),
+      });
     }
 
     return {
       success: true,
-      message: event.id
-        ? 'Itinerary event updated successfully!'
-        : 'Itinerary event added successfully!',
+      message: 'Itinerary event added successfully!',
     };
   } catch (error: unknown) {
-    return handleServiceError<void>('addOrUpdateItineraryEvent', error);
+    return handleServiceError<void>('addItineraryEvent', error);
+  }
+}
+
+/**
+ * Updates an existing itinerary event for a specific trip and date.
+ * Requires the ID of the event to be updated.
+ *
+ * @param tripId The ID of the trip.
+ * @param date The date string (e.g., 'YYYY-MM-DD') of the event.
+ * @param eventId The unique ID of the itinerary event to be updated.
+ * @param updates An object containing the fields to update for the event.
+ * @returns A ServiceResponse indicating success or failure.
+ */
+export async function updateItineraryEvent(
+  tripId: string,
+  date: string,
+  eventId: string,
+  updates: ItineraryEvent, // Uses the new update payload type
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayDocRef = getItineraryDayDocRef(tripId, date);
+    const dayDocSnap = await getDoc(dayDocRef);
+
+    if (!dayDocSnap.exists()) {
+      // If the itinerary day doesn't exist, we can't update an event within it.
+      return { success: false, message: 'Itinerary day not found.' };
+    }
+
+    const existingDay = dayDocSnap.data() as TripDayItinerary;
+    const eventIndex = existingDay.events.findIndex((e) => e.id === eventId);
+
+    if (eventIndex === -1) {
+      // If the event with the given ID is not found within the day's events.
+      return { success: false, message: 'Itinerary event not found within the specified day.' };
+    }
+
+    // Create the updated event object by merging existing data with new updates
+    const existingEvent = existingDay.events[eventIndex];
+    const updatedEvent: ItineraryEvent = {
+      ...existingEvent,
+      ...updates, // Apply the partial updates
+      updatedAt: serverTimestamp(), // Always update the timestamp on modification
+    };
+
+    // Create a new array of events with the updated event at its position
+    const updatedEventsArray = [...existingDay.events];
+    updatedEventsArray[eventIndex] = updatedEvent;
+
+    // Update the Firestore document with the modified events array
+    await updateDoc(dayDocRef, {
+      events: updatedEventsArray,
+      updatedAt: serverTimestamp(), // Update the day's last update timestamp
+    });
+
+    return {
+      success: true,
+      message: 'Itinerary event updated successfully!',
+    };
+  } catch (error: unknown) {
+    return handleServiceError<void>('updateItineraryEvent', error);
   }
 }
 
