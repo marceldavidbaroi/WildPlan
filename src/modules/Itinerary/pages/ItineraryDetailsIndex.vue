@@ -69,14 +69,14 @@
           v-for="itineraryDay in itineraryStore.itineraryDays"
           :key="itineraryDay.id"
           class="my-card q-mb-md"
-          :class="`day-bg-${extractDateParts(itineraryDay.date).day.toLowerCase()}`"
+          :class="`day-bg-${extractDateParts(itineraryDay.date)?.day.toLowerCase()}`"
           @click="onClickItineraryDay(itineraryDay.id)"
         >
           <!-- Day of week (e.g., Monday) -->
           <q-card-section class="text-center q-py-sm">
             <q-icon name="event" class="q-mr-sm" />
             <span class="text-subtitle2 text-uppercase">
-              {{ extractDateParts(itineraryDay.date).day }}
+              {{ extractDateParts(itineraryDay.date)?.day }}
             </span>
           </q-card-section>
 
@@ -85,16 +85,16 @@
             <div class="row items-center">
               <div class="col-6 text-h2 text-weight-bold">
                 <q-icon name="calendar_today" class="q-mr-sm" />
-                {{ extractDateParts(itineraryDay.date).date }}
+                {{ extractDateParts(itineraryDay.date)?.date }}
               </div>
               <div class="col-6 text-right">
                 <div class="text-subtitle1">
                   <q-icon name="date_range" class="q-mr-sm" />
-                  {{ extractDateParts(itineraryDay.date).month }}
+                  {{ extractDateParts(itineraryDay.date)?.month }}
                 </div>
                 <div class="text-caption text-grey-9">
                   <q-icon name="history" class="q-mr-sm" />
-                  {{ extractDateParts(itineraryDay.date).year }}
+                  {{ extractDateParts(itineraryDay.date)?.year }}
                 </div>
               </div>
             </div>
@@ -170,7 +170,7 @@ const fetchLoading = ref(false);
 const fetchAllItineraryDays = async () => {
   fetchLoading.value = true;
 
-  const response = await itineraryStore.fetchItineraryDaysForTrip(tripId.value!);
+  const response = await itineraryStore.getAllDays(tripId.value!);
 
   // Only create if no itinerary days exist yet
   Notify.create({
@@ -218,7 +218,7 @@ function allDays() {
 async function addDummyDays() {
   console.log(allDaysofTrip.value);
   for (const day of allDaysofTrip.value!) {
-    await itineraryStore.createItineraryEvent(tripId.value!, day);
+    await itineraryStore.createDay(tripId.value!, day);
     console.log(day);
   }
   loadMoreDays.value = false;

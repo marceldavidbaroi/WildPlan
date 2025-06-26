@@ -76,7 +76,7 @@
                   clearable
                 />
 
-                <q-input
+                <!-- <q-input
                   v-model="form.startTime"
                   label="Start Time"
                   type="datetime-local"
@@ -85,7 +85,9 @@
                   square
                   clearable
                   required
-                />
+                /> -->
+
+                <TimePicker15Min v-model="form.startTime" label="Start Time" />
 
                 <q-input
                   v-model="form.endTime"
@@ -195,7 +197,17 @@
           </div>
         </q-form>
       </div>
-      {{ itineraryStore.selectedDay!.events }}
+      <div>
+        <div v-if="itineraryStore.selectedDay!.events.length === 0">No Events</div>
+        <div v-else>
+          <div v-for="event in itineraryStore.selectedDay!.events" :key="event.id">
+            <div class="shadow-1 q-my-sm q-pa-md" style="border-radius: 12px">
+              <q-icon :name="getCategoryIcon(event.category)" class="q-mr-sm" />
+              {{ event.name }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </q-page>
 </template>
@@ -210,6 +222,7 @@ import { useTripStore } from 'src/modules/trip/store';
 import MapPicker from 'src/components/MapPicker.vue';
 import { extractDateParts } from 'src/utils/date';
 import { useAuthStore } from 'src/modules/auth/store';
+import TimePicker15Min from 'src/components/TimePicker.vue';
 const authStore = useAuthStore();
 
 const tripStore = useTripStore();
@@ -226,7 +239,7 @@ onMounted(async () => {
   tripId.value = route.params.id as string;
   itineraryDay.value = route.params.dayId as string;
 
-  const response = await itineraryStore.fetchItineraryDay(tripId.value, itineraryDay.value);
+  const response = await itineraryStore.getDay(tripId.value, itineraryDay.value);
   initialLocation.value = tripStore.activeTrip?.location;
   await tripStore.fetchTrip(tripId.value);
 
@@ -238,7 +251,7 @@ onMounted(async () => {
 
   const involvedUsers = allUsers.filter((user) => involvedUsersId.includes(user.uid));
   userOptions.value = involvedUsers;
-  console.log(userOptions.value);
+  console.log('thi sis the selected days', itineraryStore.selectedDay);
 });
 
 const form = ref<ItineraryEvent>({
@@ -272,11 +285,12 @@ const packingItemOptions = ['Passport', 'Camera', 'Sunscreen', 'Snacks'];
 
 async function onSubmit() {
   console.log('Submitted', form.value);
-  const response = await itineraryStore.addItineraryEvent(
+  const response = await itineraryStore.addEvent(
     tripId.value,
     itineraryStore.selectedDay!.id,
     form.value,
   );
+
   console.log('this is the response ', response);
   // Add actual submit logic here
 }
@@ -319,6 +333,29 @@ async function onLocationPicked(coords: object) {
   await updateTripDetails(id.value, payload);
   initialLocation.value = newLocation;
   // e.g., save to form, update store, etc.
+}
+
+function getCategoryIcon(category: string): string {
+  switch (category.toLowerCase()) {
+    case 'activity':
+      return 'directions_run'; // 🏃 Activity
+    case 'meal':
+      return 'restaurant'; // 🍽️ Meal
+    case 'travel':
+      return 'commute'; // 🚗 Travel
+    case 'lodging':
+      return 'hotel'; // 🏨 Lodging
+    case 'campchore':
+      return 'construction'; // 🛠️ Camp Chore
+    case 'meeting':
+      return 'groups'; // 👥 Meeting
+    case 'relaxation':
+      return 'spa'; // 🧘 Relaxation
+    case 'other':
+      return 'more_horiz'; // 🔘 Other
+    default:
+      return 'event_note'; // 📅 Fallback
+  }
 }
 </script>
 
