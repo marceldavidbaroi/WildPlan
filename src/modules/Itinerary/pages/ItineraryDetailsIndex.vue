@@ -112,6 +112,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { Notify } from 'quasar';
 // import AddDialog from '../components/AddDialog.vue';
 import { useTripStore } from 'src/modules/trip/store';
+import { extractDateParts } from 'src/utils/date';
 const tripStore = useTripStore();
 const router = useRouter();
 
@@ -148,21 +149,21 @@ onMounted(async () => {
 async function onClickItineraryDay(val: string) {
   await router.push({ path: `/itinerary/${tripId.value}/day/${val}` });
 }
-function extractDateParts(dateStr: string): {
-  date: number;
-  month: string;
-  year: number;
-  day: string;
-} {
-  const dateObj = new Date(dateStr);
+// function extractDateParts(dateStr: string): {
+//   date: number;
+//   month: string;
+//   year: number;
+//   day: string;
+// } {
+//   const dateObj = new Date(dateStr);
 
-  return {
-    date: dateObj.getDate(),
-    month: dateObj.toLocaleString('default', { month: 'short' }), // e.g., "Jun"
-    year: dateObj.getFullYear(),
-    day: dateObj.toLocaleString('default', { weekday: 'long' }), // e.g., "Thursday"
-  };
-}
+//   return {
+//     date: dateObj.getDate(),
+//     month: dateObj.toLocaleString('default', { month: 'short' }), // e.g., "Jun"
+//     year: dateObj.getFullYear(),
+//     day: dateObj.toLocaleString('default', { weekday: 'long' }), // e.g., "Thursday"
+//   };
+// }
 
 const fetchLoading = ref(false);
 
@@ -228,50 +229,6 @@ async function addDummyDays() {
 <style scoped>
 /* Soft pastel background colors for each day */
 /* Light mode: Soft pastel backgrounds */
-.day-bg-monday {
-  background-color: #e3f2fd;
-}
-.day-bg-tuesday {
-  background-color: #fce4ec;
-}
-.day-bg-wednesday {
-  background-color: #e8f5e9;
-}
-.day-bg-thursday {
-  background-color: #fff3e0;
-}
-.day-bg-friday {
-  background-color: #f3e5f5;
-}
-.day-bg-saturday {
-  background-color: #fbe9e7;
-}
-.day-bg-sunday {
-  background-color: #ede7f6;
-}
-
-/* Dark mode overrides */
-body.body--dark .day-bg-monday {
-  background-color: rgba(33, 150, 243, 0.1); /* darker blue tone */
-}
-body.body--dark .day-bg-tuesday {
-  background-color: rgba(233, 30, 99, 0.1); /* pink tone */
-}
-body.body--dark .day-bg-wednesday {
-  background-color: rgba(76, 175, 80, 0.1); /* green tone */
-}
-body.body--dark .day-bg-thursday {
-  background-color: rgba(255, 152, 0, 0.1); /* orange tone */
-}
-body.body--dark .day-bg-friday {
-  background-color: rgba(156, 39, 176, 0.1); /* purple tone */
-}
-body.body--dark .day-bg-saturday {
-  background-color: rgba(244, 67, 54, 0.1); /* red tone */
-}
-body.body--dark .day-bg-sunday {
-  background-color: rgba(103, 58, 183, 0.1); /* indigo tone */
-}
 
 /* Common styles */
 .my-card {
