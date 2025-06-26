@@ -13,7 +13,6 @@ export interface ItineraryEvent {
     longitude: number;
   };
   category: ItineraryEventCategory;
-  icon?: string;
   assignedTo?: string[];
   isCompleted?: boolean;
   packingItemsNeeded?: string[];

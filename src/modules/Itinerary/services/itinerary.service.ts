@@ -1,7 +1,6 @@
 /**
- * Service functions for managing Itinerary data in Firestore.
+ * Service functions for managing itinerary data in Firestore.
  */
-
 import {
   collection,
   doc,
@@ -26,67 +25,42 @@ import type {
   NewItineraryEvent,
 } from '../store/types';
 
-/**
- * Helper for consistent error handling across service functions.
- */
-function handleServiceError<T>(functionName: string, error: unknown): ServiceResponse<T> {
+// 🔧 Centralized error handling
+function handleError<T>(functionName: string, error: unknown): ServiceResponse<T> {
   console.error(`[ItineraryService.${functionName}] Error:`, error);
-  let errorMessage = `Failed to ${functionName.replace('fetch', 'load').replace('Itinerary', 'itinerary')}. Please try again.`;
+  let message = `Failed to ${functionName}. Please try again.`;
   let errorCode: string | undefined;
   let errorDetails: string | undefined;
 
   if (error instanceof FirestoreError) {
-    errorMessage = `Firestore Error: ${error.message}`;
+    message = `Firestore Error: ${error.message}`;
     errorCode = error.code;
-    if (error.code === 'permission-denied') {
-      errorMessage = 'Permission denied. You are not authorized to perform this action.';
-    } else if (error.code === 'unavailable') {
-      errorMessage = 'Network issue. Please check your internet connection.';
-    } else if (error.code === 'not-found') {
-      errorMessage = 'Document not found.';
-    }
+    if (error.code === 'permission-denied') message = 'Permission denied.';
+    else if (error.code === 'unavailable') message = 'Network issue.';
+    else if (error.code === 'not-found') message = 'Document not found.';
     errorDetails = error.message;
   } else if (error instanceof Error) {
-    errorMessage = error.message;
+    message = error.message;
     errorDetails = error.message;
   } else {
     errorDetails = String(error);
   }
 
-  return {
-    success: false,
-    data: undefined,
-    message: errorMessage,
-    errorCode: errorCode,
-    errorDetails: errorDetails,
-  };
+  return { success: false, data: undefined, message, errorCode, errorDetails };
 }
 
-/**
- * Gets a reference to the 'itinerary' subcollection for a specific trip.
- */
-const getItineraryCollectionRef = (tripId: string) => {
-  return collection(db, 'trips', tripId, 'itinerary');
-};
+// 🔗 Firestore references
+const getItineraryCollectionRef = (tripId: string) => collection(db, 'trips', tripId, 'itinerary');
 
-/**
- * Gets a DocumentReference for a specific day's itinerary document within a trip.
- */
-const getItineraryDayDocRef = (tripId: string, date: string) => {
-  return doc(getItineraryCollectionRef(tripId), date);
-};
+const getDayDocRef = (tripId: string, date: string) => doc(getItineraryCollectionRef(tripId), date);
 
-/**
- * Fetches all itinerary days for a given trip, ordered by date.
- */
-export async function fetchItineraryDaysForTrip(
-  tripId: string,
-): Promise<ServiceResponse<TripDayItinerary[]>> {
+// 📥 Get all itinerary days
+export async function getAllDays(tripId: string): Promise<ServiceResponse<TripDayItinerary[]>> {
   try {
     const q = query(getItineraryCollectionRef(tripId), orderBy('date', 'asc'));
     const snapshot = await getDocs(q);
 
-    const itineraryDays: TripDayItinerary[] = snapshot.docs.map((docSnap) => {
+    const days: TripDayItinerary[] = snapshot.docs.map((docSnap) => {
       const data = docSnap.data();
       const createdAt =
         data.createdAt instanceof Timestamp
@@ -105,209 +79,20 @@ export async function fetchItineraryDaysForTrip(
       } as TripDayItinerary;
     });
 
-    return {
-      success: true,
-      data: itineraryDays,
-      message: 'Itinerary days fetched successfully.',
-    };
-  } catch (error: unknown) {
-    return handleServiceError<TripDayItinerary[]>('fetchItineraryDaysForTrip', error);
+    return { success: true, data: days, message: 'Itinerary days fetched.' };
+  } catch (error) {
+    return handleError<TripDayItinerary[]>('getAllDays', error);
   }
 }
 
-/**
- * Adds a new event or updates an existing event within a specific day's itinerary.
- * If the day's itinerary document does not exist, it will be created.
- */
-export async function addItineraryEvent(
-  tripId: string,
-  date: string,
-  newEventData?: NewItineraryEvent,
-): Promise<ServiceResponse<void>> {
-  try {
-    const dayDocRef = getItineraryDayDocRef(tripId, date);
-    const dayDocSnap = await getDoc(dayDocRef);
-
-    // 🚫 Exit early if the itinerary day already exists
-    if (dayDocSnap.exists()) {
-      return {
-        success: false,
-        message: 'Itinerary day already exists. Skipping creation.',
-      };
-    }
-
-    const now = Timestamp.now();
-
-    // 🔄 Prepare base day doc
-    const newDayItinerary: Omit<TripDayItinerary, 'id'> = {
-      tripId,
-      date,
-      events: [],
-      dailyNotes: '',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await setDoc(dayDocRef, newDayItinerary);
-
-    // ✅ Optionally add event if provided
-    if (newEventData) {
-      const newEventId = doc(collection(db, 'tempCollectionForId')).id;
-      const fullNewEvent: ItineraryEvent = {
-        ...newEventData,
-        id: newEventId,
-        isCompleted: false,
-        createdAt: now.toMillis(),
-        updatedAt: now.toMillis(),
-      };
-
-      await updateDoc(dayDocRef, {
-        events: arrayUnion(fullNewEvent),
-      });
-    }
-    return {
-      success: true,
-      message: 'Itinerary day created successfully!',
-    };
-  } catch (error: unknown) {
-    return handleServiceError<void>('addItineraryEvent', error);
-  }
-}
-
-/**
- * Updates an existing itinerary event for a specific trip and date.
- * Requires the ID of the event to be updated.
- *
- * @param tripId The ID of the trip.
- * @param date The date string (e.g., 'YYYY-MM-DD') of the event.
- * @param eventId The unique ID of the itinerary event to be updated.
- * @param updates An object containing the fields to update for the event.
- * @returns A ServiceResponse indicating success or failure.
- */
-export async function updateItineraryEvent(
-  tripId: string,
-  date: string,
-  eventId: string,
-  updates: ItineraryEvent, // Uses the new update payload type
-): Promise<ServiceResponse<void>> {
-  try {
-    const dayDocRef = getItineraryDayDocRef(tripId, date);
-    const dayDocSnap = await getDoc(dayDocRef);
-
-    if (!dayDocSnap.exists()) {
-      // If the itinerary day doesn't exist, we can't update an event within it.
-      return { success: false, message: 'Itinerary day not found.' };
-    }
-
-    const existingDay = dayDocSnap.data() as TripDayItinerary;
-    const eventIndex = existingDay.events.findIndex((e) => e.id === eventId);
-
-    if (eventIndex === -1) {
-      // If the event with the given ID is not found within the day's events.
-      return { success: false, message: 'Itinerary event not found within the specified day.' };
-    }
-
-    // Create the updated event object by merging existing data with new updates
-    const existingEvent = existingDay.events[eventIndex];
-    const updatedEvent: ItineraryEvent = {
-      ...existingEvent,
-      ...updates, // Apply the partial updates
-      updatedAt: serverTimestamp(), // Always update the timestamp on modification
-    };
-
-    // Create a new array of events with the updated event at its position
-    const updatedEventsArray = [...existingDay.events];
-    updatedEventsArray[eventIndex] = updatedEvent;
-
-    // Update the Firestore document with the modified events array
-    await updateDoc(dayDocRef, {
-      events: updatedEventsArray,
-      updatedAt: serverTimestamp(), // Update the day's last update timestamp
-    });
-
-    return {
-      success: true,
-      message: 'Itinerary event updated successfully!',
-    };
-  } catch (error: unknown) {
-    return handleServiceError<void>('updateItineraryEvent', error);
-  }
-}
-
-/**
- * Deletes a specific event from a specific day's itinerary.
- */
-export async function deleteItineraryEvent(
-  tripId: string,
-  date: string,
-  eventToDelete: ItineraryEvent,
-): Promise<ServiceResponse<void>> {
-  try {
-    const dayDocRef = getItineraryDayDocRef(tripId, date);
-
-    await updateDoc(dayDocRef, {
-      events: arrayRemove(eventToDelete),
-      updatedAt: serverTimestamp(),
-    });
-
-    return {
-      success: true,
-      message: 'Itinerary event deleted successfully!',
-    };
-  } catch (error: unknown) {
-    return handleServiceError<void>('deleteItineraryEvent', error);
-  }
-}
-
-/**
- * Updates the daily notes for a specific day's itinerary.
- * If the day's itinerary document does not exist, it will be created with just notes.
- */
-export async function updateItineraryDayNotes(
-  tripId: string,
-  date: string,
-  notes: string,
-): Promise<ServiceResponse<void>> {
-  try {
-    const dayDocRef = getItineraryDayDocRef(tripId, date);
-    const dayDocSnap = await getDoc(dayDocRef);
-
-    if (dayDocSnap.exists()) {
-      await updateDoc(dayDocRef, {
-        dailyNotes: notes,
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      const newDayItinerary: Omit<TripDayItinerary, 'id'> = {
-        tripId: tripId,
-        date: date,
-        events: [],
-        dailyNotes: notes,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(dayDocRef, newDayItinerary);
-    }
-
-    return {
-      success: true,
-      message: 'Daily notes updated successfully!',
-    };
-  } catch (error: unknown) {
-    return handleServiceError<void>('updateItineraryDayNotes', error);
-  }
-}
-
-/**
- * Fetches a single itinerary day document by its date.
- */
-export async function fetchItineraryDay(
+// 📥 Get a single day
+export async function getDay(
   tripId: string,
   date: string,
 ): Promise<ServiceResponse<TripDayItinerary>> {
   try {
-    const dayDocRef = getItineraryDayDocRef(tripId, date);
-    const snap = await getDoc(dayDocRef);
+    const dayRef = getDayDocRef(tripId, date);
+    const snap = await getDoc(dayRef);
 
     if (!snap.exists()) {
       return {
@@ -320,27 +105,228 @@ export async function fetchItineraryDay(
 
     const data = snap.data();
     const createdAt =
-      data?.createdAt instanceof Timestamp
+      data.createdAt instanceof Timestamp
         ? data.createdAt.toMillis()
-        : data?.createdAt || Date.now();
+        : data.createdAt || Date.now();
     const updatedAt =
-      data?.updatedAt instanceof Timestamp
+      data.updatedAt instanceof Timestamp
         ? data.updatedAt.toMillis()
-        : data?.updatedAt || Date.now();
-
-    const itineraryDay: TripDayItinerary = {
-      id: snap.id,
-      ...data,
-      createdAt,
-      updatedAt,
-    } as TripDayItinerary;
+        : data.updatedAt || Date.now();
 
     return {
       success: true,
-      data: itineraryDay,
-      message: 'Itinerary day fetched successfully',
+      data: {
+        id: snap.id,
+        ...data,
+        createdAt,
+        updatedAt,
+      } as TripDayItinerary,
+      message: 'Itinerary day fetched.',
     };
-  } catch (error: unknown) {
-    return handleServiceError<TripDayItinerary>('fetchItineraryDay', error);
+  } catch (error) {
+    return handleError<TripDayItinerary>('getDay', error);
+  }
+}
+
+// ➕ Create new day (optional: with one event)
+export async function createDay(
+  tripId: string,
+  date: string,
+  newEventData?: NewItineraryEvent,
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayRef = getDayDocRef(tripId, date);
+    const snap = await getDoc(dayRef);
+
+    if (snap.exists()) {
+      return { success: false, message: 'Itinerary day already exists.' };
+    }
+
+    const now = Timestamp.now();
+    const newDay: Omit<TripDayItinerary, 'id'> = {
+      tripId,
+      date,
+      events: [],
+      dailyNotes: '',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await setDoc(dayRef, newDay);
+
+    if (newEventData) {
+      const eventId = doc(collection(db, 'tempCollectionForId')).id;
+      const newEvent: ItineraryEvent = {
+        ...newEventData,
+        id: eventId,
+        isCompleted: false,
+        createdAt: now.toMillis(),
+        updatedAt: now.toMillis(),
+      };
+
+      await updateDoc(dayRef, {
+        events: arrayUnion(newEvent),
+      });
+    }
+
+    return { success: true, message: 'Itinerary day created.' };
+  } catch (error) {
+    return handleError<void>('createDay', error);
+  }
+}
+
+// ➕ Add an event to a day
+export async function addEvent(
+  tripId: string,
+  date: string,
+  newEventData: NewItineraryEvent,
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayRef = getDayDocRef(tripId, date);
+    const now = Timestamp.now();
+    const eventId = doc(collection(db, 'tempCollectionForId')).id;
+
+    const newEvent: ItineraryEvent = {
+      ...newEventData,
+      id: eventId,
+      isCompleted: false,
+      createdAt: now.toMillis(),
+      updatedAt: now.toMillis(),
+    };
+
+    await updateDoc(dayRef, {
+      events: arrayUnion(newEvent),
+    });
+
+    return { success: true, message: 'Event added to itinerary day.' };
+  } catch (error) {
+    return handleError<void>('addEvent', error);
+  }
+}
+
+// 📝 Update daily notes
+export async function updateNotes(
+  tripId: string,
+  date: string,
+  notes: string,
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayRef = getDayDocRef(tripId, date);
+    const snap = await getDoc(dayRef);
+
+    if (snap.exists()) {
+      await updateDoc(dayRef, {
+        dailyNotes: notes,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      const newDay: Omit<TripDayItinerary, 'id'> = {
+        tripId,
+        date,
+        events: [],
+        dailyNotes: notes,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      await setDoc(dayRef, newDay);
+    }
+
+    return { success: true, message: 'Daily notes updated.' };
+  } catch (error) {
+    return handleError<void>('updateNotes', error);
+  }
+}
+
+// ✏️ Edit an event
+export async function editEventById(
+  tripId: string,
+  date: string,
+  eventId: string,
+  updates: Partial<ItineraryEvent>,
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayRef = getDayDocRef(tripId, date);
+    const snap = await getDoc(dayRef);
+
+    if (!snap.exists()) {
+      return { success: false, message: 'Itinerary day not found.' };
+    }
+
+    const dayData = snap.data() as TripDayItinerary;
+    const index = dayData.events.findIndex((e) => e.id === eventId);
+
+    if (index === -1) {
+      return { success: false, message: 'Event not found.' };
+    }
+
+    const updatedEvent: ItineraryEvent = {
+      ...dayData.events[index],
+      ...updates,
+      updatedAt: Date.now(),
+    } as ItineraryEvent;
+
+    const updatedEvents = [...dayData.events];
+    updatedEvents[index] = updatedEvent;
+
+    await updateDoc(dayRef, {
+      events: updatedEvents,
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true, message: 'Event updated.' };
+  } catch (error) {
+    return handleError<void>('editEventById', error);
+  }
+}
+
+// ❌ Delete an event (by full object)
+export async function deleteAllEvent(
+  tripId: string,
+  date: string,
+  eventToDelete: ItineraryEvent,
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayRef = getDayDocRef(tripId, date);
+
+    await updateDoc(dayRef, {
+      events: arrayRemove(eventToDelete),
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true, message: 'Event deleted.' };
+  } catch (error) {
+    return handleError<void>('deleteEvent', error);
+  }
+}
+
+// ❌ Remove event by ID
+export async function removeEventById(
+  tripId: string,
+  date: string,
+  eventId: string,
+): Promise<ServiceResponse<void>> {
+  try {
+    const dayRef = getDayDocRef(tripId, date);
+    const snap = await getDoc(dayRef);
+
+    if (!snap.exists()) {
+      return { success: false, message: 'Itinerary day not found.' };
+    }
+
+    const dayData = snap.data() as TripDayItinerary;
+    const remainingEvents = dayData.events.filter((e) => e.id !== eventId);
+
+    if (remainingEvents.length === dayData.events.length) {
+      return { success: false, message: 'Event not found.' };
+    }
+
+    await updateDoc(dayRef, {
+      events: remainingEvents,
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true, message: 'Event removed.' };
+  } catch (error) {
+    return handleError<void>('removeEventById', error);
   }
 }

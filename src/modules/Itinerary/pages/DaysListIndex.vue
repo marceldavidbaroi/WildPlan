@@ -11,7 +11,7 @@
           flat
           class="q-my-md"
           style="border-radius: 16px; width: fit-content"
-          :class="`day-bg-${extractDateParts(itineraryStore.selectedDay!.id).day.toLowerCase()}`"
+          :class="`day-bg-${extractDateParts(itineraryStore.selectedDay!.id)!.day.toLowerCase()}`"
         >
           <q-card-section class="row no-wrap items-center">
             <!-- Left: Date -->
@@ -37,8 +37,18 @@
         </q-card>
       </div>
 
-      <div><q-btn color="primary" label="Add Event" @click="onClick" /></div>
-      <div class="q-pa-md shadow-4" style="border-radius: 12px">
+      <div>
+        <q-btn
+          v-if="!showAddDialog"
+          color="primary"
+          label="Add Event"
+          @click="showAddDialog = true"
+        />
+      </div>
+      <div v-if="showAddDialog" class="q-pa-md shadow-4" style="border-radius: 12px">
+        <div class="full-width text-right">
+          <q-btn dense flat size="sm" icon="close" class="q-mb-sm" @click="showAddDialog = false" />
+        </div>
         <q-form @submit.prevent="onSubmit" @reset="onReset" class="">
           <div class="row q-col-gutter-md">
             <!-- Column 1 -->
@@ -106,8 +116,6 @@
                 <div>
                   <MapPicker :initial-location="initialLocation" @picked="onLocationPicked" />
                 </div>
-
-                <q-input v-model="form.icon" label="Icon" filled dense square clearable />
               </div>
             </div>
 
@@ -133,6 +141,10 @@
                   label="Assigned To"
                   multiple
                   use-chips
+                  option-value="uid"
+                  option-label="displayName"
+                  map-options
+                  emit-value
                   filled
                   dense
                   square
@@ -152,7 +164,7 @@
                 />
 
                 <q-input
-                  v-model.number="form.budgetImpact.estimatedCost"
+                  v-model.number="form.budgetImpact!.estimatedCost"
                   label="Estimated Cost"
                   type="number"
                   prefix="$"
@@ -176,13 +188,14 @@
             </div>
 
             <!-- Buttons -->
-            <div class="col-12 q-pt-md">
-              <q-btn label="Submit" type="submit" color="primary" icon="send" class="q-mr-sm" />
-              <q-btn label="Reset" type="reset" color="grey" flat icon="restart_alt" />
+            <div class="col-12 q-pt-md text-right">
+              <q-btn type="reset" color="grey" flat icon="restart_alt" />
+              <q-btn type="submit" color="primary" flat icon="send" class="q-mr-sm" />
             </div>
           </div>
         </q-form>
       </div>
+      {{ itineraryStore.selectedDay!.events }}
     </div>
   </q-page>
 </template>
@@ -196,11 +209,14 @@ import { ItineraryEventCategory } from '../store/types';
 import { useTripStore } from 'src/modules/trip/store';
 import MapPicker from 'src/components/MapPicker.vue';
 import { extractDateParts } from 'src/utils/date';
+import { useAuthStore } from 'src/modules/auth/store';
+const authStore = useAuthStore();
 
 const tripStore = useTripStore();
 
 const route = useRoute();
 const initialLocation = ref();
+const showAddDialog = ref(false);
 
 const itineraryStore = useItineraryStore();
 const tripId = ref();
@@ -217,6 +233,12 @@ onMounted(async () => {
   console.log(response);
 
   date.value = extractDateParts(itineraryStore.selectedDay!.id);
+  const involvedUsersId = tripStore.activeTrip?.involvedUsers || [];
+  const allUsers = authStore.allUsers || [];
+
+  const involvedUsers = allUsers.filter((user) => involvedUsersId.includes(user.uid));
+  userOptions.value = involvedUsers;
+  console.log(userOptions.value);
 });
 
 const form = ref<ItineraryEvent>({
@@ -232,12 +254,11 @@ const form = ref<ItineraryEvent>({
     longitude: 0,
   },
   category: ItineraryEventCategory.Other,
-  icon: '',
   assignedTo: [],
   isCompleted: false,
   packingItemsNeeded: [],
   budgetImpact: {
-    estimatedCost: undefined,
+    estimatedCost: 0,
   },
   notes: '',
   createdAt: Date.now(),
@@ -246,11 +267,17 @@ const form = ref<ItineraryEvent>({
 
 const categoryOptions = Object.values(ItineraryEventCategory);
 
-const userOptions = ['Alice', 'Bob', 'Charlie'];
+const userOptions = ref();
 const packingItemOptions = ['Passport', 'Camera', 'Sunscreen', 'Snacks'];
 
-function onSubmit() {
+async function onSubmit() {
   console.log('Submitted', form.value);
+  const response = await itineraryStore.addItineraryEvent(
+    tripId.value,
+    itineraryStore.selectedDay!.id,
+    form.value,
+  );
+  console.log('this is the response ', response);
   // Add actual submit logic here
 }
 
@@ -267,13 +294,12 @@ function onReset() {
       latitude: 0,
       longitude: 0,
     },
-    category: 'Other',
-    icon: '',
+    category: ItineraryEventCategory.Other,
     assignedTo: [],
     isCompleted: false,
     packingItemsNeeded: [],
     budgetImpact: {
-      estimatedCost: undefined,
+      estimatedCost: 0,
     },
     notes: '',
     createdAt: Date.now(),

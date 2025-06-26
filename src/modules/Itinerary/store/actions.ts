@@ -9,7 +9,7 @@ import * as ItineraryService from '../services/itinerary.service';
 import { Timestamp } from 'firebase/firestore';
 
 /**
- * Convert Firestore Timestamps to number (ms) for consistent client use.
+ * 🔄 Normalize Firestore Timestamps to ms
  */
 function normalizeTimestamps(day: TripDayItinerary): TripDayItinerary {
   return {
@@ -19,14 +19,17 @@ function normalizeTimestamps(day: TripDayItinerary): TripDayItinerary {
   };
 }
 
-export async function fetchItineraryDaysForTrip(
+/**
+ * 🔍 Fetch all itinerary days for a trip
+ */
+export async function getAllDays(
   this: ItineraryStoreState,
   tripId: string,
 ): Promise<ServiceResponse<TripDayItinerary[]>> {
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.fetchItineraryDaysForTrip(tripId);
+  const response = await ItineraryService.getAllDays(tripId);
 
   if (response.success && response.data) {
     const normalizedDays = response.data.map(normalizeTimestamps);
@@ -41,7 +44,10 @@ export async function fetchItineraryDaysForTrip(
   return response;
 }
 
-export async function fetchItineraryDay(
+/**
+ * 📅 Fetch a specific itinerary day by date
+ */
+export async function getDay(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
@@ -49,7 +55,7 @@ export async function fetchItineraryDay(
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.fetchItineraryDay(tripId, date);
+  const response = await ItineraryService.getDay(tripId, date);
 
   if (response.success && response.data) {
     const normalizedDay = normalizeTimestamps(response.data);
@@ -65,13 +71,16 @@ export async function fetchItineraryDay(
   } else {
     this.error = response.message;
   }
-  this.selectedDay = response.data || null;
 
+  this.selectedDay = response.data || null;
   this.isLoading = false;
   return response;
 }
 
-export async function createItineraryEvent(
+/**
+ * 🆕 Create a new itinerary day (optionally with a first event)
+ */
+export async function createDay(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
@@ -80,22 +89,72 @@ export async function createItineraryEvent(
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.addItineraryEvent(tripId, date, event);
+  const response = await ItineraryService.createDay(tripId, date, event);
 
   if (response.success) {
-    // Re-fetch day to ensure local state reflects changes
-
-    await ItineraryService.fetchItineraryDay(tripId, date);
+    // Refetch the day to update local state
+    await getAllDays.call(this, tripId);
   } else {
     this.error = response.message;
   }
-  console.log(response.success);
 
   this.isLoading = false;
   return response;
 }
 
-export async function updateItineraryEvent(
+/**
+ * ➕ Add a new event to an existing itinerary day
+ */
+export async function addEvent(
+  this: ItineraryStoreState,
+  tripId: string,
+  date: string,
+  event: NewItineraryEvent,
+): Promise<ServiceResponse<void>> {
+  this.isLoading = true;
+  this.error = null;
+
+  const response = await ItineraryService.addEvent(tripId, date, event);
+
+  if (response.success) {
+    await getAllDays.call(this, tripId);
+  } else {
+    this.error = response.message;
+  }
+
+  this.isLoading = false;
+  return response;
+}
+
+/**
+ * ✏️ Edit an existing event in an itinerary day by event ID
+ */
+export async function editEventById(
+  this: ItineraryStoreState,
+  tripId: string,
+  date: string,
+  eventId: string,
+  updates: Partial<ItineraryEvent>,
+): Promise<ServiceResponse<void>> {
+  this.isLoading = true;
+  this.error = null;
+
+  const response = await ItineraryService.editEventById(tripId, date, eventId, updates);
+
+  if (response.success) {
+    await getAllDays.call(this, tripId);
+  } else {
+    this.error = response.message;
+  }
+
+  this.isLoading = false;
+  return response;
+}
+
+/**
+ * ❌ Delete an event by ID from an itinerary day
+ */
+export async function deleteAllEvent(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
@@ -104,11 +163,10 @@ export async function updateItineraryEvent(
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.addItineraryEvent(tripId, date, event);
+  const response = await ItineraryService.deleteAllEvent(tripId, date, event);
 
   if (response.success) {
-    // Re-fetch day to ensure local state reflects changes
-    await ItineraryService.fetchItineraryDay(tripId, date);
+    await getAllDays.call(this, tripId);
   } else {
     this.error = response.message;
   }
@@ -117,20 +175,19 @@ export async function updateItineraryEvent(
   return response;
 }
 
-export async function deleteItineraryEvent(
+export async function removeEventById(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
-  event: ItineraryEvent,
+  eventId: string,
 ): Promise<ServiceResponse<void>> {
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.deleteItineraryEvent(tripId, date, event);
+  const response = await ItineraryService.removeEventById(tripId, date, eventId);
 
   if (response.success) {
-    // Re-fetch day to reflect the deletion in local state
-    await ItineraryService.fetchItineraryDay(tripId, date);
+    await getAllDays.call(this, tripId);
   } else {
     this.error = response.message;
   }
@@ -139,7 +196,10 @@ export async function deleteItineraryEvent(
   return response;
 }
 
-export async function updateItineraryDayNotes(
+/**
+ * 📝 Update the daily notes for a specific itinerary day
+ */
+export async function updateNotes(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
@@ -148,11 +208,11 @@ export async function updateItineraryDayNotes(
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.updateItineraryDayNotes(tripId, date, notes);
+  const response = await ItineraryService.updateNotes(tripId, date, notes);
 
   if (response.success) {
-    const index = this.itineraryDays?.findIndex((day) => day.date === date);
-    if (index !== -1 && index !== undefined) {
+    const index = this.itineraryDays.findIndex((day) => day.date === date);
+    if (index !== -1) {
       this.itineraryDays[index]!.dailyNotes = notes;
     }
   } else {
