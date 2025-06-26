@@ -11,7 +11,7 @@
           flat
           class="q-my-md"
           style="border-radius: 16px; width: fit-content"
-          :class="`day-bg-${extractDateParts(itineraryStore.selectedDay!.id)!.day.toLowerCase()}`"
+          :class="`day-bg-${date?.day.toLowerCase()}`"
         >
           <q-card-section class="row no-wrap items-center">
             <!-- Left: Date -->
@@ -26,7 +26,7 @@
               <div class="text-subtitle1">{{ tripStore.activeTrip?.name }}</div>
 
               <div class="text-body2 q-mt-xs">
-                Events today: <strong>{{ itineraryStore.selectedDay!.events.length }}</strong>
+                Events today: <strong>{{ itineraryStore.selectedDay?.events.length }}</strong>
               </div>
 
               <div class="text-body2 q-mt-sm">
@@ -38,222 +38,117 @@
       </div>
 
       <div>
-        <q-btn
-          v-if="!showAddDialog"
-          color="primary"
-          label="Add Event"
-          @click="showAddDialog = true"
+        <div class="full-width row justify-end">
+          <q-btn
+            color="primary"
+            no-caps
+            label="Add Event"
+            @click="
+              {
+                (showAddDialog = true), (isEdit = false);
+              }
+            "
+          />
+        </div>
+
+        <AddEventDialog
+          :show="showAddDialog"
+          :form="form"
+          :initial-location="initialLocation"
+          :category-options="categoryOptions"
+          :user-options="userOptions"
+          :packing-item-options="packingItemOptions"
+          :isEdit="isEdit"
+          @update:show="(val) => (showAddDialog = val)"
+          @submit="handleSubmit"
         />
       </div>
-      <div v-if="showAddDialog" class="q-pa-md shadow-4" style="border-radius: 12px">
-        <div class="full-width text-right">
-          <q-btn dense flat size="sm" icon="close" class="q-mb-sm" @click="showAddDialog = false" />
-        </div>
-        <q-form @submit.prevent="onSubmit" @reset="onReset" class="">
-          <div class="row q-col-gutter-md">
-            <!-- Column 1 -->
-            <div class="col-12 col-md-6 col-lg-4">
-              <div class="q-gutter-sm">
-                <q-input
-                  v-model="form.name"
-                  label="Event Name"
-                  filled
-                  dense
-                  square
-                  clearable
-                  required
-                  :rules="[(val) => !!val || 'Event name is required']"
-                />
 
-                <q-input
-                  v-model="form.description"
-                  label="Description"
-                  type="textarea"
-                  filled
-                  dense
-                  square
-                  autogrow
-                  clearable
-                />
-
-                <!-- <q-input
-                  v-model="form.startTime"
-                  label="Start Time"
-                  type="datetime-local"
-                  filled
-                  dense
-                  square
-                  clearable
-                  required
-                /> -->
-
-                <TimePicker15Min v-model="form.startTime" label="Start Time" />
-
-                <q-input
-                  v-model="form.endTime"
-                  label="End Time"
-                  type="datetime-local"
-                  filled
-                  dense
-                  square
-                  clearable
-                />
-              </div>
-            </div>
-
-            <!-- Column 2 -->
-            <div class="col-12 col-md-6 col-lg-4">
-              <div class="q-gutter-sm">
-                <q-input
-                  v-model="form.locationName"
-                  label="Location Name"
-                  filled
-                  dense
-                  square
-                  clearable
-                />
-
-                <q-input v-model="form.address" label="Address" filled dense square clearable />
-
+      <div>
+        <div v-if="itineraryStore.selectedDay?.events.length === 0">No Events</div>
+        <div v-else>
+          <div v-for="event in itineraryStore.selectedDay?.events" :key="event.id">
+            <div class="shadow-1 q-my-sm q-pa-md" style="border-radius: 12px">
+              <div class="row justify-between">
+                <div @click="onDetailsClick(event)" style="cursor: pointer">
+                  <q-icon :name="getCategoryIcon(event.category)" class="q-mr-sm" />
+                  <span class="text-bold">{{ event.startTime }}</span>
+                  $&nbsp;&nbsp;-&nbsp;&nbsp;
+                  {{ event.name }}
+                </div>
                 <div>
-                  <MapPicker :initial-location="initialLocation" @picked="onLocationPicked" />
+                  <q-btn color="info" flat dense size="sm" icon="edit" @click="onEdit(event)" />
+                  <q-btn
+                    color="negative"
+                    flat
+                    dense
+                    size="sm"
+                    icon="delete"
+                    @click="onDelete(event)"
+                  />
                 </div>
               </div>
-            </div>
-
-            <!-- Column 3 -->
-            <div class="col-12 col-md-12 col-lg-4">
-              <div class="q-gutter-sm">
-                <q-select
-                  v-model="form.category"
-                  :options="categoryOptions"
-                  option-label="label"
-                  option-value="value"
-                  label="Category"
-                  filled
-                  dense
-                  square
-                  clearable
-                  required
-                />
-
-                <q-select
-                  v-model="form.assignedTo"
-                  :options="userOptions"
-                  label="Assigned To"
-                  multiple
-                  use-chips
-                  option-value="uid"
-                  option-label="displayName"
-                  map-options
-                  emit-value
-                  filled
-                  dense
-                  square
-                  clearable
-                />
-
-                <q-select
-                  v-model="form.packingItemsNeeded"
-                  :options="packingItemOptions"
-                  label="Packing Items Needed"
-                  multiple
-                  use-chips
-                  filled
-                  dense
-                  square
-                  clearable
-                />
-
-                <q-input
-                  v-model.number="form.budgetImpact!.estimatedCost"
-                  label="Estimated Cost"
-                  type="number"
-                  prefix="$"
-                  filled
-                  dense
-                  square
-                  clearable
-                />
-
-                <q-input
-                  v-model="form.notes"
-                  label="Notes"
-                  type="textarea"
-                  filled
-                  dense
-                  square
-                  autogrow
-                  clearable
-                />
-              </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="col-12 q-pt-md text-right">
-              <q-btn type="reset" color="grey" flat icon="restart_alt" />
-              <q-btn type="submit" color="primary" flat icon="send" class="q-mr-sm" />
-            </div>
-          </div>
-        </q-form>
-      </div>
-      <div>
-        <div v-if="itineraryStore.selectedDay!.events.length === 0">No Events</div>
-        <div v-else>
-          <div v-for="event in itineraryStore.selectedDay!.events" :key="event.id">
-            <div class="shadow-1 q-my-sm q-pa-md" style="border-radius: 12px">
-              <q-icon :name="getCategoryIcon(event.category)" class="q-mr-sm" />
-              {{ event.name }}
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <DeleteDialog
+      v-model="showDeleteDialog"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+      message="Are you sure you want to delete this activity"
+      :loading="itineraryStore.isLoading"
+    />
+
+    <EventDetailsDialog v-model="showDetails" :event="selectedEvent" />
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useItineraryStore } from '../store';
+/* ───── Imports ───── */
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import type { ItineraryEvent } from '../store/types';
-import { ItineraryEventCategory } from '../store/types';
+
+import { useItineraryStore } from '../store';
 import { useTripStore } from 'src/modules/trip/store';
-import MapPicker from 'src/components/MapPicker.vue';
-import { extractDateParts } from 'src/utils/date';
 import { useAuthStore } from 'src/modules/auth/store';
-import TimePicker15Min from 'src/components/TimePicker.vue';
+
+import { extractDateParts } from 'src/utils/date';
+import type { ItineraryEvent, NewItineraryEvent } from '../store/types';
+import { ItineraryEventCategory } from '../store/types';
+
+import AddEventDialog from '../components/AddEventDialog.vue';
+import DeleteDialog from 'src/components/DeleteDialog.vue';
+import EventDetailsDialog from '../components/EventDetailsDialog.vue';
+import { Notify } from 'quasar';
+
+/* ───── Store Instances ───── */
+const itineraryStore = useItineraryStore();
+const tripStore = useTripStore();
 const authStore = useAuthStore();
 
-const tripStore = useTripStore();
-
+/* ───── Refs and State ───── */
 const route = useRoute();
-const initialLocation = ref();
-const showAddDialog = ref(false);
-
-const itineraryStore = useItineraryStore();
-const tripId = ref();
-const itineraryDay = ref();
+const tripId = ref<string>();
+const itineraryDay = ref<string>();
 const date = ref();
-onMounted(async () => {
-  tripId.value = route.params.id as string;
-  itineraryDay.value = route.params.dayId as string;
+const initialLocation = ref();
+const showDetails = ref<boolean>(false);
 
-  const response = await itineraryStore.getDay(tripId.value, itineraryDay.value);
-  initialLocation.value = tripStore.activeTrip?.location;
-  await tripStore.fetchTrip(tripId.value);
+const showAddDialog = ref(false);
+const showDeleteDialog = ref(false);
+const isEdit = ref(false);
+const selectedEventDel = ref();
+const selectedEventId = ref();
+const selectedEvent = ref();
 
-  console.log(response);
+const userOptions = ref();
+const categoryOptions = Object.values(ItineraryEventCategory);
+const packingItemOptions = ['Passport', 'Camera', 'Sunscreen', 'Snacks'];
 
-  date.value = extractDateParts(itineraryStore.selectedDay!.id);
-  const involvedUsersId = tripStore.activeTrip?.involvedUsers || [];
-  const allUsers = authStore.allUsers || [];
-
-  const involvedUsers = allUsers.filter((user) => involvedUsersId.includes(user.uid));
-  userOptions.value = involvedUsers;
-  console.log('thi sis the selected days', itineraryStore.selectedDay);
-});
-
+/* ───── Form Data ───── */
 const form = ref<ItineraryEvent>({
   id: '',
   name: '',
@@ -278,84 +173,110 @@ const form = ref<ItineraryEvent>({
   updatedAt: Date.now(),
 });
 
-const categoryOptions = Object.values(ItineraryEventCategory);
+/* ───── Lifecycle ───── */
+onMounted(async () => {
+  tripId.value = route.params.id as string;
+  itineraryDay.value = route.params.dayId as string;
 
-const userOptions = ref();
-const packingItemOptions = ['Passport', 'Camera', 'Sunscreen', 'Snacks'];
+  await itineraryStore.getDay(tripId.value, itineraryDay.value);
+  await tripStore.fetchTrip(tripId.value);
 
-async function onSubmit() {
-  console.log('Submitted', form.value);
-  const response = await itineraryStore.addEvent(
-    tripId.value,
-    itineraryStore.selectedDay!.id,
-    form.value,
-  );
+  initialLocation.value = tripStore.activeTrip?.location;
 
-  console.log('this is the response ', response);
-  // Add actual submit logic here
-}
+  const involvedUsersId = tripStore.activeTrip?.involvedUsers || [];
+  const allUsers = authStore.allUsers || [];
+  userOptions.value = allUsers.filter((user) => involvedUsersId.includes(user.uid));
+  date.value = extractDateParts(itineraryStore.selectedDay!.id);
+});
 
-function onReset() {
-  form.value = {
-    id: '',
-    name: '',
-    description: '',
-    startTime: '',
-    endTime: '',
-    locationName: '',
-    address: '',
-    coordinates: {
-      latitude: 0,
-      longitude: 0,
-    },
-    category: ItineraryEventCategory.Other,
-    assignedTo: [],
-    isCompleted: false,
-    packingItemsNeeded: [],
-    budgetImpact: {
-      estimatedCost: 0,
-    },
-    notes: '',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-}
-
-async function onLocationPicked(coords: object) {
-  const newLocation = {
-    name: tripStore.activeTrip?.location.name,
-    ...coords,
-  };
-  const payload = {
-    location: newLocation,
-  };
-
-  await updateTripDetails(id.value, payload);
-  initialLocation.value = newLocation;
-  // e.g., save to form, update store, etc.
-}
-
+/* ───── Handlers ───── */
 function getCategoryIcon(category: string): string {
   switch (category.toLowerCase()) {
     case 'activity':
-      return 'directions_run'; // 🏃 Activity
+      return 'directions_run';
     case 'meal':
-      return 'restaurant'; // 🍽️ Meal
+      return 'restaurant';
     case 'travel':
-      return 'commute'; // 🚗 Travel
+      return 'commute';
     case 'lodging':
-      return 'hotel'; // 🏨 Lodging
+      return 'hotel';
     case 'campchore':
-      return 'construction'; // 🛠️ Camp Chore
+      return 'construction';
     case 'meeting':
-      return 'groups'; // 👥 Meeting
+      return 'groups';
     case 'relaxation':
-      return 'spa'; // 🧘 Relaxation
+      return 'spa';
     case 'other':
-      return 'more_horiz'; // 🔘 Other
+      return 'more_horiz';
     default:
-      return 'event_note'; // 📅 Fallback
+      return 'event_note';
   }
+}
+
+async function handleSubmit(val: NewItineraryEvent) {
+  let response = null;
+  if (isEdit.value) {
+    response = await itineraryStore.editEventById(
+      tripId.value!,
+      itineraryStore.selectedDay!.id,
+      selectedEventId.value,
+      val,
+    );
+  } else {
+    response = await itineraryStore.addEvent(tripId.value!, itineraryStore.selectedDay!.id, val);
+  }
+
+  if (response.success) {
+    await itineraryStore.getDay(tripId.value!, itineraryDay.value!);
+  }
+  Notify.create({
+    position: 'top',
+    message: response?.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+  });
+
+  isEdit.value = false;
+}
+
+function onEdit(event: ItineraryEvent) {
+  selectedEventId.value = event.id;
+  isEdit.value = true;
+  showAddDialog.value = true;
+  form.value = event;
+}
+
+function onDelete(val: object) {
+  selectedEventDel.value = val;
+  showDeleteDialog.value = true;
+}
+
+async function handleConfirm() {
+  const response = await itineraryStore.removeEventById(
+    tripId.value!,
+    itineraryStore.selectedDay!.id,
+    selectedEventDel.value.id,
+  );
+
+  if (response?.success) {
+    await itineraryStore.getDay(tripId.value!, itineraryDay.value!);
+  }
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+  });
+  showDeleteDialog.value = false;
+}
+
+function handleCancel() {
+  showDeleteDialog.value = false;
+}
+function onDetailsClick(event: object) {
+  showDetails.value = true;
+  selectedEvent.value = event;
+  console.log(event);
 }
 </script>
 

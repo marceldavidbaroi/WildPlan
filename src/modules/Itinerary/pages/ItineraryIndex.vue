@@ -111,16 +111,19 @@ import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { Notify } from 'quasar';
 
 import { useTripStore } from '../../trip/store';
-import TripCard from 'src/components/TripCard.vue';
-// import AddTripComponent from 'src/components/AddTripComponent.vue';
-
+import { useAuthStore } from 'src/modules/auth/store';
+import { useItineraryStore } from '../store';
 import type { Trip, TripCreateData } from '../../trip/store/types';
 import type { UserProfile } from '../../auth/store/types';
-import { useAuthStore } from 'src/modules/auth/store';
+
+import TripCard from 'src/components/TripCard.vue';
+
 import router from 'src/router';
 
 const tripStore = useTripStore();
 const authStore = useAuthStore();
+const itineraryStore = useItineraryStore();
+
 const trips = ref<Trip[]>([]);
 const allUsers = ref<UserProfile[]>(authStore.allUsers || []);
 
@@ -189,6 +192,7 @@ const onAddClick = () => {
 };
 
 const onCardClick = async (id: string) => {
+  itineraryStore.currentTripId = id;
   await router.push({ path: `/itinerary/${id}` });
 };
 const handleCreateTrip = async (data: TripCreateData) => {

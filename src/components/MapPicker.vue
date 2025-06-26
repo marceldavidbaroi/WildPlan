@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-btn label="Pick Location" size="sm" @click="showMap = true" color="primary" />
+    <q-btn :label="btnLabel" size="sm" @click="showMap = true" color="primary" />
 
     <q-dialog v-model="showMap" full-width>
       <q-card style="max-width: 1000px">
@@ -10,36 +10,47 @@
         <q-card-section>
           <div v-if="pickedLocation">
             <p><strong>Selected Coordinates:</strong></p>
-            <p>Lat: {{ pickedLocation.lat }}</p>
-            <p>Lng: {{ pickedLocation.lng }}</p>
+            <p>Lat: {{ pickedLocation?.lat }}</p>
+            <p>Lng: {{ pickedLocation?.lng }}</p>
           </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" v-close-popup />
-          <q-btn color="primary" label="Set Location" @click="emitPickedLocation" />
+          <q-btn
+            v-if="isSetLocation"
+            color="primary"
+            label="Set Location"
+            @click="emitPickedLocation"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
 import 'leaflet-geosearch/dist/geosearch.css';
 
-// Props
 const props = defineProps({
-  modelValue: Object, // For two-way binding (optional)
+  modelValue: Object,
   initialLocation: {
     type: Object,
-    default: () => ({ lat: 23.8103, lng: 90.4125 }), // Dhaka as fallback
+    default: () => ({ lat: 23.8103, lng: 90.4125 }), // Default: Dhaka
+  },
+  isSetLocation: {
+    type: Boolean,
+    default: true,
+  },
+  btnLabel: {
+    type: String,
+    default: 'Pick Location',
   },
 });
 
-// Emits
 const emit = defineEmits(['update:modelValue', 'picked']);
 
 const showMap = ref(false);
@@ -56,29 +67,43 @@ watch(showMap, async (val) => {
   }
 });
 
+// 🔄 Normalize props.initialLocation to always return { lat, lng }
+function getNormalizedCoords() {
+  const loc = props.initialLocation;
+  const lat = loc.lat ?? loc.latitude;
+  const lng = loc.lng ?? loc.longitude;
+
+  if (typeof lat === 'number' && typeof lng === 'number') {
+    return { lat, lng };
+  } else {
+    // fallback to Dhaka
+    return { lat: 23.8103, lng: 90.4125 };
+  }
+}
+
 function initMap() {
   if (map) {
     map.remove();
   }
 
-  const coords = [props.initialLocation.lat, props.initialLocation.lng];
+  const coords = getNormalizedCoords();
 
-  map = L.map('map').setView(coords, 13);
+  map = L.map('map').setView([coords.lat, coords.lng], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
   }).addTo(map);
 
-  marker = L.marker(coords, { draggable: true }).addTo(map);
+  marker = L.marker([coords.lat, coords.lng], { draggable: true }).addTo(map);
 
-  pickedLocation.value = { lat: coords[0], lng: coords[1] };
+  pickedLocation.value = { lat: coords.lat, lng: coords.lng };
 
-  marker.on('dragend', function (event) {
+  marker.on('dragend', (event) => {
     const { lat, lng } = event.target.getLatLng();
     updatePicked(lat, lng);
   });
 
-  map.on('click', function (e) {
+  map.on('click', (e) => {
     const { lat, lng } = e.latlng;
     marker.setLatLng([lat, lng]);
     updatePicked(lat, lng);
@@ -114,7 +139,7 @@ function updatePicked(lat, lng) {
 function emitPickedLocation() {
   if (pickedLocation.value) {
     emit('picked', pickedLocation.value);
-    showMap.value = false; // ✅ close the dialog manually
+    showMap.value = false;
   }
 }
 </script>

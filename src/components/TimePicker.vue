@@ -1,3 +1,46 @@
+<template>
+  <div class="q-gutter-xs q-col-gutter-sm row items-center">
+    <!-- Label -->
+    <div v-if="props.label" class="text-subtitle2 col-12 col-sm-auto" style="min-width: 100px">
+      {{ props.label }}
+    </div>
+
+    <!-- Time Selects -->
+    <div class="col-12 col-sm row q-gutter-xs">
+      <q-select
+        v-model="selectedHour"
+        :options="hours"
+        label="Hour"
+        dense
+        outlined
+        emit-value
+        map-options
+        class="col-4"
+      />
+      <q-select
+        v-model="selectedMinute"
+        :options="minutes"
+        label="Minute"
+        dense
+        outlined
+        emit-value
+        map-options
+        class="col-4"
+      />
+      <q-select
+        v-model="selectedMeridiem"
+        :options="meridiems"
+        label="AM/PM"
+        dense
+        outlined
+        emit-value
+        map-options
+        class="col-4"
+      />
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, watch, defineEmits, defineProps } from 'vue';
 
@@ -7,9 +50,8 @@ const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
 const minutes = ['00', '15', '30', '45'];
 const meridiems: Meridiem[] = ['AM', 'PM'];
 
-// Props for v-model binding (time string) and label text
 const props = defineProps<{
-  modelValue: string;
+  modelValue: string | undefined;
   label?: string;
 }>();
 
@@ -17,12 +59,10 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
 
-// Internal refs for selects
 const selectedHour = ref<string | null | undefined>(null);
 const selectedMinute = ref<string | null | undefined>(null);
 const selectedMeridiem = ref<Meridiem | null | undefined>(null);
 
-// Sync from modelValue to selects when modelValue changes externally
 watch(
   () => props.modelValue,
   (val) => {
@@ -32,7 +72,7 @@ watch(
       selectedMeridiem.value = null;
       return;
     }
-    // Expecting format "hh:mm AM/PM"
+
     const match = val.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
     if (match) {
       selectedHour.value = match[1];
@@ -43,7 +83,6 @@ watch(
   { immediate: true },
 );
 
-// When any select changes, emit updated value
 watch([selectedHour, selectedMinute, selectedMeridiem], ([h, m, mer]) => {
   if (h && m && mer) {
     emit('update:modelValue', `${h.padStart(2, '0')}:${m} ${mer}`);
@@ -52,43 +91,3 @@ watch([selectedHour, selectedMinute, selectedMeridiem], ([h, m, mer]) => {
   }
 });
 </script>
-
-<template>
-  <div class="row items-center q-gutter-sm">
-    <!-- Label before selects -->
-    <div v-if="props.label" class="text-subtitle2" style="min-width: 100px">
-      {{ props.label }}
-    </div>
-
-    <q-select
-      v-model="selectedHour"
-      :options="hours"
-      label="Hour"
-      dense
-      outlined
-      style="width: 80px"
-      emit-value
-      map-options
-    />
-    <q-select
-      v-model="selectedMinute"
-      :options="minutes"
-      label="Minute"
-      dense
-      outlined
-      style="width: 80px"
-      emit-value
-      map-options
-    />
-    <q-select
-      v-model="selectedMeridiem"
-      :options="meridiems"
-      label="AM/PM"
-      dense
-      outlined
-      style="width: 80px"
-      emit-value
-      map-options
-    />
-  </div>
-</template>

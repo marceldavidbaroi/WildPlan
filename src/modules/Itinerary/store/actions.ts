@@ -91,12 +91,12 @@ export async function createDay(
 
   const response = await ItineraryService.createDay(tripId, date, event);
 
-  if (response.success) {
-    // Refetch the day to update local state
-    await getAllDays.call(this, tripId);
-  } else {
-    this.error = response.message;
-  }
+  // if (response.success) {
+  //   // Refetch the day to update local state
+  //   await getAllDays.call(this, tripId);
+  // } else {
+  //   this.error = response.message;
+  // }
 
   this.isLoading = false;
   return response;
@@ -116,11 +116,11 @@ export async function addEvent(
 
   const response = await ItineraryService.addEvent(tripId, date, event);
 
-  if (response.success) {
-    await getAllDays.call(this, tripId);
-  } else {
-    this.error = response.message;
-  }
+  // if (response.success) {
+  //   await getAllDays.call(this, tripId);
+  // } else {
+  //   this.error = response.message;
+  // }
 
   this.isLoading = false;
   return response;
@@ -141,11 +141,11 @@ export async function editEventById(
 
   const response = await ItineraryService.editEventById(tripId, date, eventId, updates);
 
-  if (response.success) {
-    await getAllDays.call(this, tripId);
-  } else {
-    this.error = response.message;
-  }
+  // if (response.success) {
+  //   await getAllDays.call(this, tripId);
+  // } else {
+  //   this.error = response.message;
+  // }
 
   this.isLoading = false;
   return response;
@@ -165,11 +165,11 @@ export async function deleteAllEvent(
 
   const response = await ItineraryService.deleteAllEvent(tripId, date, event);
 
-  if (response.success) {
-    await getAllDays.call(this, tripId);
-  } else {
-    this.error = response.message;
-  }
+  // if (response.success) {
+  //   await getAllDays.call(this, tripId);
+  // } else {
+  //   this.error = response.message;
+  // }
 
   this.isLoading = false;
   return response;
@@ -186,11 +186,11 @@ export async function removeEventById(
 
   const response = await ItineraryService.removeEventById(tripId, date, eventId);
 
-  if (response.success) {
-    await getAllDays.call(this, tripId);
-  } else {
-    this.error = response.message;
-  }
+  // if (response.success) {
+  //   await getAllDays.call(this, tripId);
+  // } else {
+  //   this.error = response.message;
+  // }
 
   this.isLoading = false;
   return response;
