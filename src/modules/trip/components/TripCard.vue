@@ -21,7 +21,9 @@
                   {{ trip.status }}
                 </q-chip>
               </div>
-              <div class="creator text-caption text-grey-4 q-mt-xs">by {{ trip.createdBy }}</div>
+              <div class="creator text-caption text-grey-4 q-mt-xs">
+                by {{ getUserDetails(trip.createdBy)?.email }}
+              </div>
             </div>
           </div>
         </q-card>
@@ -39,7 +41,9 @@
 import { date } from 'quasar';
 import type { Trip } from '../store/types';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from 'src/modules/auth/store';
 const router = useRouter();
+const authStore = useAuthStore();
 
 defineProps<{
   trips: Trip[];
@@ -66,6 +70,10 @@ function getStatusColor(status: Trip['status']) {
 
 const onCardClick = async (id: string) => {
   await router.push({ path: `/trip/${id}` });
+};
+
+const getUserDetails = (id: string) => {
+  return authStore.allUsers?.find((u) => u.uid === id);
 };
 </script>
 
