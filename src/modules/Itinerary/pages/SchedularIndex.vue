@@ -121,7 +121,7 @@ import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { ItineraryEventCategory } from '../store/types';
 import { useItineraryStore } from '../store';
-import { NewItineraryEvent } from '../store/types';
+import type { NewItineraryEvent, ItineraryEvent } from '../store/types';
 
 const route = useRoute();
 const $q = useQuasar();
@@ -131,6 +131,7 @@ const isDarkMode = ref<boolean>(false);
 const tripId = ref();
 const date = ref();
 const tripName = ref();
+const selectedEvent = ref();
 
 onMounted(async () => {
   isDarkMode.value = $q.dark.isActive;
@@ -138,8 +139,7 @@ onMounted(async () => {
   date.value = route.query.date;
   tripName.value = route.query.tripName;
   const response = await itineraryStore.getDay(tripId.value, date.value);
-  console.log('respopnse', response.data?.events);
-  // events.value = response.data?.events;
+  events.value = response.data?.events ?? [];
 });
 
 type Period = 'am' | 'pm';
@@ -160,7 +160,7 @@ const eventName = ref('');
 const eventType = ref('');
 const eventTypeOption = Object.values(ItineraryEventCategory);
 const showDialog = ref(false);
-const events = reactive<NewItineraryEvent[]>([]);
+const events = ref<Partial<ItineraryEvent>[]>([]);
 const isEditMode = ref(false);
 const editingEventIndex = ref<number | null>(null);
 
@@ -184,11 +184,13 @@ const getEventBlocks = (event: NewItineraryEvent): BlockKey[] => {
 
 const toggleSelection = (period: Period, hour: number, quarter: number) => {
   const time = blockToTimeString({ period, hour, quarter });
-  const eventIndex = events.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
+  const eventIndex = events.value.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
 
   if (eventIndex !== -1) {
     // Prefill dialog with existing event
-    const event = events[eventIndex];
+    const event = events.value[eventIndex];
+    selectedEvent.value = event;
+    console.log('selected evebt ', event);
     eventName.value = event.name;
     eventType.value = event.category;
     isEditMode.value = true;
@@ -230,12 +232,28 @@ const saveEvent = async () => {
     endTime: blockToTimeString(last, true),
     category: eventType.value,
   };
+  const EditEvent: ItineraryEvent = {
+    name: eventName.value,
+    startTime: blockToTimeString(first),
+    endTime: blockToTimeString(last, true),
+    category: eventType.value,
+    ...selectedEvent.value,
+  };
 
   if (isEditMode.value && editingEventIndex.value !== null) {
-    events[editingEventIndex.value] = updatedEvent;
+    events[editingEventIndex.value] = EditEvent;
+    const response = await itineraryStore.editEventById(
+      tripId.value,
+      date.value,
+      EditEvent.id,
+      EditEvent,
+    );
+    console.log('while update', response);
   } else {
-    events.push(updatedEvent);
+    events.value.push(updatedEvent);
     await itineraryStore.addEvent(tripId.value, date.value, updatedEvent);
+    const response = await itineraryStore.getDay(tripId.value, date.value);
+    events.value = response.data?.events ?? [];
   }
 
   // Reset form
@@ -262,11 +280,11 @@ const hasEvent = (p: Period, h: number, q: number) => !!getBlockEventName(p, h, 
 
 const getBlockEventName = (p: Period, h: number, q: number) => {
   const time = blockToTimeString({ period: p, hour: h, quarter: q });
-  return events.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.name ?? '';
+  return events.value.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.name ?? '';
 };
 const getBlockEventType = (p: Period, h: number, q: number) => {
   const time = blockToTimeString({ period: p, hour: h, quarter: q });
-  return events.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.category ?? '';
+  return events.value.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.category ?? '';
 };
 
 const blockToTimeString = (block: BlockKey, isEnd = false): string => {
@@ -338,7 +356,7 @@ const darkModeEventColors = [
 
 const getBlockStyle = (p: Period, h: number, q: number) => {
   const time = blockToTimeString({ period: p, hour: h, quarter: q });
-  const eventIndex = events.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
+  const eventIndex = events.value.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
   if (eventIndex !== -1) {
     let eventColors = null;
     if (isDarkMode) {

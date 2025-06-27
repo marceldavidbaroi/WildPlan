@@ -154,16 +154,15 @@ export async function editEventById(
 /**
  * ❌ Delete an event by ID from an itinerary day
  */
-export async function deleteAllEvent(
+export async function deleteAllEvents(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
-  event: ItineraryEvent,
 ): Promise<ServiceResponse<void>> {
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.deleteAllEvent(tripId, date, event);
+  const response = await ItineraryService.deleteAllEvents(tripId, date);
 
   // if (response.success) {
   //   await getAllDays.call(this, tripId);

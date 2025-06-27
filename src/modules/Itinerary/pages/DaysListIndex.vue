@@ -39,6 +39,7 @@
 
       <div>
         <div class="full-width row justify-end">
+          <q-btn color="negative" no-caps label="Delete All" @click="onDeleteAll" />
           <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
           <q-btn
             color="primary"
@@ -109,11 +110,18 @@
       v-model="showDeleteDialog"
       @confirm="handleConfirm"
       @cancel="handleCancel"
-      message="Are you sure you want to delete this activity"
+      message="Are you sure you want to delete this event"
       :loading="itineraryStore.isLoading"
     />
 
     <EventDetailsDialog v-model="showDetails" :event="selectedEvent" />
+    <DeleteDialog
+      v-model="showDeleteAllDialog"
+      @confirm="handleConfirmAll"
+      @cancel="handleCancelAll"
+      message="Are you sure you want to delete all events "
+      :loading="itineraryStore.isLoading"
+    />
   </q-page>
 </template>
 
@@ -290,6 +298,29 @@ async function handleConfirm() {
 function handleCancel() {
   showDeleteDialog.value = false;
 }
+
+async function handleConfirmAll() {
+  const response = await itineraryStore.deleteAllEvents(
+    tripId.value!,
+    itineraryStore.selectedDay!.id,
+  );
+
+  if (response?.success) {
+    await itineraryStore.getDay(tripId.value!, itineraryDay.value!);
+  }
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+  });
+  showDeleteAllDialog.value = false;
+}
+
+function handleCancelAll() {
+  showDeleteAllDialog.value = false;
+}
+
 function onDetailsClick(event: object) {
   showDetails.value = true;
   selectedEvent.value = event;
@@ -324,6 +355,11 @@ async function onScheduleClick() {
       date: itineraryStore.selectedDay!.id,
     },
   });
+}
+
+const showDeleteAllDialog = ref(false);
+function onDeleteAll() {
+  showDeleteAllDialog.value = true;
 }
 </script>
 

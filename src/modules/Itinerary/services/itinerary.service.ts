@@ -13,7 +13,6 @@ import {
   FirestoreError,
   orderBy,
   arrayUnion,
-  arrayRemove,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from 'src/boot/firebase';
@@ -280,22 +279,21 @@ export async function editEventById(
 }
 
 // ❌ Delete an event (by full object)
-export async function deleteAllEvent(
+export async function deleteAllEvents(
   tripId: string,
   date: string,
-  eventToDelete: ItineraryEvent,
 ): Promise<ServiceResponse<void>> {
   try {
     const dayRef = getDayDocRef(tripId, date);
 
     await updateDoc(dayRef, {
-      events: arrayRemove(eventToDelete),
+      events: [],
       updatedAt: serverTimestamp(),
     });
 
-    return { success: true, message: 'Event deleted.' };
+    return { success: true, message: 'All events deleted.' };
   } catch (error) {
-    return handleError<void>('deleteEvent', error);
+    return handleError<void>('deleteAllEvents', error);
   }
 }
 
