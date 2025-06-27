@@ -102,7 +102,7 @@
     <q-dialog v-model="showDialog" persistent>
       <q-card>
         <q-card-section>
-          <div class="text-h6">Add Event</div>
+          <div class="text-h6">{{ isEditMode ? 'Edit Event' : 'Add Event' }}</div>
           <q-input v-model="eventName" label="Event Name" autofocus />
           <q-select v-model="eventType" :options="eventTypeOption" label="Standard" filled />
         </q-card-section>
@@ -120,20 +120,26 @@ import { ref, reactive, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { ItineraryEventCategory } from '../store/types';
+import { useItineraryStore } from '../store';
+import { NewItineraryEvent } from '../store/types';
 
 const route = useRoute();
 const $q = useQuasar();
+const itineraryStore = useItineraryStore();
 
 const isDarkMode = ref<boolean>(false);
 const tripId = ref();
 const date = ref();
 const tripName = ref();
 
-onMounted(() => {
+onMounted(async () => {
   isDarkMode.value = $q.dark.isActive;
   tripId.value = route.query.tripId;
   date.value = route.query.date;
   tripName.value = route.query.tripName;
+  const response = await itineraryStore.getDay(tripId.value, date.value);
+  console.log('respopnse', response.data?.events);
+  // events.value = response.data?.events;
 });
 
 type Period = 'am' | 'pm';
@@ -146,7 +152,7 @@ interface ScheduledEvent {
   name: string;
   startTime: string;
   endTime: string;
-  type: string;
+  category: string;
 }
 
 const selectedBlocks = ref<BlockKey[]>([]);
@@ -154,9 +160,45 @@ const eventName = ref('');
 const eventType = ref('');
 const eventTypeOption = Object.values(ItineraryEventCategory);
 const showDialog = ref(false);
-const events = reactive<ScheduledEvent[]>([]);
+const events = reactive<NewItineraryEvent[]>([]);
+const isEditMode = ref(false);
+const editingEventIndex = ref<number | null>(null);
+
+const getEventBlocks = (event: NewItineraryEvent): BlockKey[] => {
+  const blocks: BlockKey[] = [];
+
+  for (const period of ['am', 'pm'] as Period[]) {
+    for (let hour = 0; hour < 12; hour++) {
+      for (let quarter = 0; quarter < 4; quarter++) {
+        const block = { period, hour, quarter };
+        const timeStr = blockToTimeString(block);
+        if (isTimeInRange(timeStr, event.startTime, event.endTime)) {
+          blocks.push(block);
+        }
+      }
+    }
+  }
+
+  return blocks;
+};
 
 const toggleSelection = (period: Period, hour: number, quarter: number) => {
+  const time = blockToTimeString({ period, hour, quarter });
+  const eventIndex = events.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
+
+  if (eventIndex !== -1) {
+    // Prefill dialog with existing event
+    const event = events[eventIndex];
+    eventName.value = event.name;
+    eventType.value = event.category;
+    isEditMode.value = true;
+    editingEventIndex.value = eventIndex;
+    selectedBlocks.value = getEventBlocks(event); // helper function below
+    showDialog.value = true;
+    return;
+  }
+
+  // Normal toggle behavior
   const index = selectedBlocks.value.findIndex(
     (b) => b.period === period && b.hour === hour && b.quarter === quarter,
   );
@@ -170,29 +212,47 @@ const toggleSelection = (period: Period, hour: number, quarter: number) => {
 const cancelEvent = () => {
   showDialog.value = false;
   eventName.value = '';
+  eventType.value = '';
+  selectedBlocks.value = [];
+  isEditMode.value = false;
+  editingEventIndex.value = null;
 };
 
-const saveEvent = () => {
+const saveEvent = async () => {
   if (!eventName.value.trim()) return;
 
   const sorted = [...selectedBlocks.value].sort(compareBlock);
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
-
-  events.push({
+  const updatedEvent: NewItineraryEvent = {
     name: eventName.value,
     startTime: blockToTimeString(first),
     endTime: blockToTimeString(last, true),
-    type: eventType.value,
-  });
+    category: eventType.value,
+  };
 
+  if (isEditMode.value && editingEventIndex.value !== null) {
+    events[editingEventIndex.value] = updatedEvent;
+  } else {
+    events.push(updatedEvent);
+    await itineraryStore.addEvent(tripId.value, date.value, updatedEvent);
+  }
+
+  // Reset form
   selectedBlocks.value = [];
   eventName.value = '';
+  eventType.value = '';
+  isEditMode.value = false;
+  editingEventIndex.value = null;
   showDialog.value = false;
 };
 
-const exportEvents = () => {
+const exportEvents = async () => {
   console.log('Exported Events:', JSON.stringify(events, null, 2));
+  console.log('Exported Events:', events);
+  for (const event of events) {
+    await itineraryStore.addEvent(tripId.value, date.value, event);
+  }
 };
 
 const isSelected = (p: Period, h: number, q: number) =>
@@ -206,7 +266,7 @@ const getBlockEventName = (p: Period, h: number, q: number) => {
 };
 const getBlockEventType = (p: Period, h: number, q: number) => {
   const time = blockToTimeString({ period: p, hour: h, quarter: q });
-  return events.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.type ?? '';
+  return events.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.category ?? '';
 };
 
 const blockToTimeString = (block: BlockKey, isEnd = false): string => {
