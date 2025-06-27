@@ -3,21 +3,25 @@
     <div class="row items-center justify-between q-mb-md">
       <div>
         <h2 class="text-h5 text-primary">Trip Plan for {{ formattedDate }}</h2>
-        <p class="text-caption text-grey-7">Trip ID: {{ plan.tripId }}</p>
+        <p class="text-caption text-grey-7">Trip ID: {{ events?.tripId || 'Loading...' }}</p>
       </div>
       <q-btn label="Print" icon="print" color="primary" @click="printPage" />
     </div>
 
     <q-card flat bordered class="q-pa-md q-mb-md">
       <q-card-section>
-        <div><strong>Daily Notes:</strong> {{ plan.dailyNotes || 'None' }}</div>
+        <div><strong>Daily Notes:</strong> {{ events?.dailyNotes || 'None' }}</div>
       </q-card-section>
     </q-card>
 
     <q-card flat bordered class="q-pa-md">
       <q-card-section>
         <div class="events-columns">
-          <div v-for="(event, index) in plan.events" :key="index" class="event-section q-mb-md">
+          <div
+            v-for="(event, index) in events?.events || []"
+            :key="index"
+            class="event-section q-mb-md"
+          >
             <div class="event-header q-pa-xs">
               <input
                 type="checkbox"
@@ -41,6 +45,9 @@
               </li>
             </ul>
           </div>
+          <div v-if="!events?.events || events.events.length === 0" class="text-grey-6">
+            No events available.
+          </div>
         </div>
       </q-card-section>
     </q-card>
@@ -48,13 +55,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
-
-const $q = useQuasar();
-onMounted(() => {
-  $q.dark.set(false);
-});
+import { useItineraryStore } from '../store';
+import { useRoute } from 'vue-router';
 
 interface BudgetImpact {
   amount: number;
@@ -82,35 +86,28 @@ interface Plan {
   updatedAt: number;
 }
 
-const plan: Plan = {
-  id: '2025-06-25',
-  tripId: 'Wk2ibTylYn54KQFhlZ8z',
-  date: '2025-06-25',
-  dailyNotes: '',
-  createdAt: 1750781475743,
-  updatedAt: 1751017871091,
-  events: [
-    {
-      startTime: '12:00 AM',
-      endTime: '01:00 AM',
-      assignedTo: ['John'],
-      isCompleted: false,
-      budgetImpact: { amount: 20, currency: 'USD' },
-    },
-    {
-      startTime: '08:00 AM',
-      endTime: '09:00 AM',
-      assignedTo: ['Alice'],
-      notes: 'take a note of dreams',
-      category: 'relaxation',
-      address: 'hotel',
-      createdAt: 1751017797968,
-    },
-  ],
-};
+const route = useRoute();
+const itineraryStore = useItineraryStore();
+const $q = useQuasar();
+
+const events = ref<Plan | null>(null);
+const tripId = ref<string | null>(null);
+const date = ref<string | null>(null);
+
+onMounted(async () => {
+  $q.dark.set(false);
+  tripId.value = route.query.tripId as string;
+  date.value = route.query.date as string;
+
+  if (tripId.value && date.value) {
+    const response = await itineraryStore.getDay(tripId.value, date.value);
+    events.value = response.data;
+  }
+});
 
 const formattedDate = computed(() => {
-  return new Date(plan.date).toLocaleDateString(undefined, {
+  if (!events.value?.date) return '';
+  return new Date(events.value.date).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -137,6 +134,8 @@ function printPage() {
   border-radius: 4px;
   margin-bottom: 6px;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .styled-list {
@@ -146,7 +145,6 @@ function printPage() {
 }
 
 .status-checkbox {
-  margin-left: 6px;
   width: 16px;
   height: 16px;
   vertical-align: middle;

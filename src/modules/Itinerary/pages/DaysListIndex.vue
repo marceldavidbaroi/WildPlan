@@ -367,7 +367,13 @@ function onDeleteAll() {
 }
 
 const onPreview = () => {
-  const url = router.resolve({ path: '/external/trip_day' }).href;
+  const url = router.resolve({
+    path: '/external/trip_day',
+    query: {
+      tripId: tripId.value,
+      date: itineraryStore.selectedDay!.id,
+    },
+  }).href;
   console.log(url);
   window.open(url, '_blank');
 };
