@@ -38,7 +38,7 @@
       </div>
 
       <div>
-        <div class="full-width row justify-end">
+        <div class="full-width row justify-end q-gutter-sm">
           <q-btn color="negative" no-caps label="Delete All" @click="onDeleteAll" />
           <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
           <q-btn
@@ -74,7 +74,9 @@
               <div class="row justify-between">
                 <div @click="onDetailsClick(event)" style="cursor: pointer">
                   <q-icon :name="getCategoryIcon(event.category)" class="q-mr-sm" />
-                  <span class="text-bold">{{ event.startTime }}</span>
+                  <span class="text-bold"
+                    >{{ event.startTime }}&nbsp;-&nbsp;{{ event.endTime }}</span
+                  >
                   $&nbsp;&nbsp;-&nbsp;&nbsp;
                   {{ event.name }}
                 </div>

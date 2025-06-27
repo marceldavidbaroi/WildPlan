@@ -9,8 +9,8 @@ export interface ItineraryEvent {
   locationName?: string;
   address?: string;
   coordinates?: {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
   };
   category: ItineraryEventCategory;
   assignedTo?: string[];

@@ -15,20 +15,20 @@
           :disable="selectedBlocks.length === 0"
           @click="showDialog = true"
         />
-        <q-btn
+        <!-- <q-btn
           label="Export Events"
           color="accent"
           unelevated
           class="q-px-md"
           :disable="events.length === 0"
           @click="exportEvents"
-        />
+        /> -->
       </div>
     </div>
 
     <!-- Scrollable Time Grid -->
     <div class="scroll-area q-mt-md" :class="isDarkMode ? 'text-white' : 'text-black'">
-      <div class="row q-col-gutter-md">
+      <div v-if="!loading" class="row q-col-gutter-md">
         <!-- AM -->
         <div class="col-12 col-md-6">
           <q-card flat bordered class="q-pa-sm">
@@ -84,7 +84,7 @@
                     <span class="event-label">
                       <q-icon
                         v-if="getBlockEventName('pm', hour - 1, quarter - 1)"
-                        :name="getCategoryIcon(getBlockEventType('am', hour - 1, quarter - 1))"
+                        :name="getCategoryIcon(getBlockEventType('pm', hour - 1, quarter - 1))"
                         size="sm"
                       />
                       {{ getBlockEventName('pm', hour - 1, quarter - 1) }}</span
@@ -96,11 +96,14 @@
           </q-card>
         </div>
       </div>
+      <div v-else class="flex flex-center">
+        <q-spinner-ball size="md" color="primary" />
+      </div>
     </div>
 
     <!-- Dialog -->
     <q-dialog v-model="showDialog" persistent>
-      <q-card>
+      <q-card class="" style="width: 300px">
         <q-card-section>
           <div class="text-h6">{{ isEditMode ? 'Edit Event' : 'Add Event' }}</div>
           <q-input v-model="eventName" label="Event Name" autofocus />
@@ -108,7 +111,7 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" @click="cancelEvent" />
-          <q-btn flat label="Save" @click="saveEvent" />
+          <q-btn flat label="Save" :loading="btnLoading" @click="saveEvent" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -132,14 +135,18 @@ const tripId = ref();
 const date = ref();
 const tripName = ref();
 const selectedEvent = ref();
+const btnLoading = ref(false);
+const loading = ref(false);
 
 onMounted(async () => {
+  loading.value = true;
   isDarkMode.value = $q.dark.isActive;
   tripId.value = route.query.tripId;
   date.value = route.query.date;
   tripName.value = route.query.tripName;
   const response = await itineraryStore.getDay(tripId.value, date.value);
   events.value = response.data?.events ?? [];
+  loading.value = false;
 });
 
 type Period = 'am' | 'pm';
@@ -163,6 +170,42 @@ const showDialog = ref(false);
 const events = ref<Partial<ItineraryEvent>[]>([]);
 const isEditMode = ref(false);
 const editingEventIndex = ref<number | null>(null);
+
+const defaultEvent: NewItineraryEvent = {
+  id: '',
+  name: '',
+  description: '',
+  startTime: '',
+  endTime: '',
+  locationName: '',
+  address: '',
+  coordinates: {
+    lat: 0,
+    lng: 0,
+  },
+  category: '',
+  assignedTo: [],
+  isCompleted: false,
+  packingItemsNeeded: [],
+  budgetImpact: {
+    estimatedCost: 0,
+  },
+  notes: '',
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+};
+
+function deepMergeDefaults(target: any, defaults: any): any {
+  if (Array.isArray(defaults)) return target ?? [];
+  if (typeof defaults === 'object' && defaults !== null) {
+    const merged: any = {};
+    for (const key in defaults) {
+      merged[key] = deepMergeDefaults(target?.[key], defaults[key]);
+    }
+    return merged;
+  }
+  return target ?? defaults;
+}
 
 const getEventBlocks = (event: NewItineraryEvent): BlockKey[] => {
   const blocks: BlockKey[] = [];
@@ -221,6 +264,7 @@ const cancelEvent = () => {
 };
 
 const saveEvent = async () => {
+  btnLoading.value = true;
   if (!eventName.value.trim()) return;
 
   const sorted = [...selectedBlocks.value].sort(compareBlock);
@@ -233,25 +277,29 @@ const saveEvent = async () => {
     category: eventType.value,
   };
   const EditEvent: ItineraryEvent = {
+    ...selectedEvent.value,
     name: eventName.value,
     startTime: blockToTimeString(first),
     endTime: blockToTimeString(last, true),
     category: eventType.value,
-    ...selectedEvent.value,
   };
 
   if (isEditMode.value && editingEventIndex.value !== null) {
-    events[editingEventIndex.value] = EditEvent;
-    const response = await itineraryStore.editEventById(
+    const safeEvent = deepMergeDefaults(EditEvent, defaultEvent);
+
+    const responseq = await itineraryStore.editEventById(
       tripId.value,
       date.value,
       EditEvent.id,
-      EditEvent,
+      safeEvent,
     );
-    console.log('while update', response);
+    const response = await itineraryStore.getDay(tripId.value, date.value);
+    events.value = response.data?.events ?? [];
   } else {
     events.value.push(updatedEvent);
-    await itineraryStore.addEvent(tripId.value, date.value, updatedEvent);
+    const safeEvent = deepMergeDefaults(updatedEvent, defaultEvent);
+
+    await itineraryStore.addEvent(tripId.value, date.value, safeEvent);
     const response = await itineraryStore.getDay(tripId.value, date.value);
     events.value = response.data?.events ?? [];
   }
@@ -263,15 +311,15 @@ const saveEvent = async () => {
   isEditMode.value = false;
   editingEventIndex.value = null;
   showDialog.value = false;
+
+  btnLoading.value = false;
 };
 
-const exportEvents = async () => {
-  console.log('Exported Events:', JSON.stringify(events, null, 2));
-  console.log('Exported Events:', events);
-  for (const event of events) {
-    await itineraryStore.addEvent(tripId.value, date.value, event);
-  }
-};
+// const exportEvents = async () => {
+//   for (const event of events) {
+//     await itineraryStore.addEvent(tripId.value, date.value, event);
+//   }
+// };
 
 const isSelected = (p: Period, h: number, q: number) =>
   selectedBlocks.value.some((b) => b.period === p && b.hour === h && b.quarter === q);

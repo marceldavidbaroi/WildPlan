@@ -63,8 +63,8 @@
                   clearable
                 />
                 <MapPicker :initial-location="initialLocation" @picked="onLocationPicked" />
-                Latitude: {{ localForm.coordinates.lat }} <br />
-                Longitude: {{ localForm.coordinates.lng }}
+                Latitude: {{ localForm.coordinates?.lat }} <br />
+                Longitude: {{ localForm.coordinates?.lng }}
               </div>
             </div>
             <!-- Column 3 -->
