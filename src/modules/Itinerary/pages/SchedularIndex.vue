@@ -6,7 +6,7 @@
         <div class="text-h6">{{ tripName }}</div>
         <div class="text-caption">{{ date }}</div>
       </div>
-      <div class="">
+      <div class="row justify-between">
         <q-btn
           label="Add Event"
           color="primary"
@@ -15,14 +15,14 @@
           :disable="selectedBlocks.length === 0"
           @click="showDialog = true"
         />
-        <!-- <q-btn
-          label="Export Events"
-          color="accent"
+        <q-btn
+          label="Delete All"
+          color="negative"
           unelevated
           class="q-px-md"
           :disable="events.length === 0"
-          @click="exportEvents"
-        /> -->
+          @click="deleteAllEvent"
+        />
       </div>
     </div>
 
@@ -35,7 +35,7 @@
             <div class="text-subtitle2 q-mb-sm">AM</div>
             <div v-for="hour in 12" :key="'am-' + hour" class="q-mb-xs">
               <div class="row items-center">
-                <div class="col-2 text-right text-caption text-bold">{{ hour }} AM</div>
+                <div class="col-2 text-center text-caption text-bold">{{ hour }} AM</div>
                 <div class="col-10 row q-col-gutter-xs">
                   <div
                     v-for="quarter in 4"
@@ -68,7 +68,7 @@
             <div class="text-subtitle2 q-mb-sm">PM</div>
             <div v-for="hour in 12" :key="'pm-' + hour" class="q-mb-xs">
               <div class="row items-center">
-                <div class="col-2 text-right text-caption text-bold">{{ hour }} PM</div>
+                <div class="col-2 text-center text-caption text-bold">{{ hour }} PM</div>
                 <div class="col-10 row q-col-gutter-xs">
                   <div
                     v-for="quarter in 4"
@@ -115,16 +115,25 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <DeleteDialog
+      v-model="showDeleteAllDialog"
+      @confirm="handleConfirmAll"
+      @cancel="handleCancelAll"
+      message="Are you sure you want to delete all events "
+      :loading="itineraryStore.isLoading"
+    />
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { useQuasar } from 'quasar';
+import { Notify, useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { ItineraryEventCategory } from '../store/types';
 import { useItineraryStore } from '../store';
 import type { NewItineraryEvent, ItineraryEvent } from '../store/types';
+import DeleteDialog from 'src/components/DeleteDialog.vue';
 
 const route = useRoute();
 const $q = useQuasar();
@@ -137,6 +146,7 @@ const tripName = ref();
 const selectedEvent = ref();
 const btnLoading = ref(false);
 const loading = ref(false);
+const showDeleteAllDialog = ref(false);
 
 onMounted(async () => {
   loading.value = true;
@@ -441,6 +451,30 @@ function getCategoryIcon(category: string): string {
     default:
       return 'event_note';
   }
+}
+
+const deleteAllEvent = () => {
+  showDeleteAllDialog.value = true;
+};
+
+async function handleConfirmAll() {
+  const response = await itineraryStore.deleteAllEvents(tripId.value!, date.value);
+
+  if (response?.success) {
+    const response = await itineraryStore.getDay(tripId.value, date.value);
+    events.value = response.data?.events ?? [];
+  }
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+  });
+  showDeleteAllDialog.value = false;
+}
+
+function handleCancelAll() {
+  showDeleteAllDialog.value = false;
 }
 </script>
 

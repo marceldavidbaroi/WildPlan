@@ -28,6 +28,19 @@ const authRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+
+  {
+    path: '/external',
+    component: () => import('src/layouts/PrintLayout.vue'),
+    meta: { requiresAuth: false },
+    children: [
+      {
+        name: 'itinerary-day',
+        path: 'trip_day',
+        component: () => import('./pages/DailyPlanPreview.vue'),
+      },
+    ],
+  },
 ];
 
 export default authRoutes;

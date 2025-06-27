@@ -39,6 +39,7 @@
 
       <div>
         <div class="full-width row justify-end q-gutter-sm">
+          <q-btn color="info" no-caps flat label="Preview" @click="onPreview" />
           <q-btn color="negative" no-caps label="Delete All" @click="onDeleteAll" />
           <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
           <q-btn
@@ -203,7 +204,8 @@ onMounted(async () => {
   tripId.value = route.params.id as string;
   itineraryDay.value = route.params.dayId as string;
 
-  await itineraryStore.getDay(tripId.value, itineraryDay.value);
+  const res = await itineraryStore.getDay(tripId.value, itineraryDay.value);
+  console.log(res);
   await tripStore.fetchTrip(tripId.value);
 
   initialLocation.value = tripStore.activeTrip?.location;
@@ -363,6 +365,12 @@ const showDeleteAllDialog = ref(false);
 function onDeleteAll() {
   showDeleteAllDialog.value = true;
 }
+
+const onPreview = () => {
+  const url = router.resolve({ path: '/external/trip_day' }).href;
+  console.log(url);
+  window.open(url, '_blank');
+};
 </script>
 
 <style scoped></style>
