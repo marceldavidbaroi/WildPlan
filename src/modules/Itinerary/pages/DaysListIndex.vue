@@ -1,6 +1,6 @@
 <template>
   <q-page padding>
-    <div v-if="itineraryStore.isLoading" class="flex flex-center q-py-xl">
+    <div v-if="loading" class="flex flex-center q-py-xl">
       <q-spinner-ball color="primary" size="xl" />
       <div class="text-h6 q-ml-md text-grey-7">Loading your itinerary...</div>
     </div>
@@ -39,6 +39,7 @@
 
       <div>
         <div class="full-width row justify-end">
+          <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
           <q-btn
             color="primary"
             no-caps
@@ -77,6 +78,16 @@
                   {{ event.name }}
                 </div>
                 <div>
+                  <q-btn
+                    color="secondary"
+                    flat
+                    dense
+                    size="sm"
+                    no-caps
+                    :loading="btnLoading"
+                    :label="event.isCompleted ? 'Complete' : 'Mark as Complete'"
+                    @click="onClickMarkAsComplete(event)"
+                  />
                   <q-btn color="info" flat dense size="sm" icon="edit" @click="onEdit(event)" />
                   <q-btn
                     color="negative"
@@ -109,7 +120,7 @@
 <script setup lang="ts">
 /* ───── Imports ───── */
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { useItineraryStore } from '../store';
 import { useTripStore } from 'src/modules/trip/store';
@@ -128,6 +139,7 @@ import { Notify } from 'quasar';
 const itineraryStore = useItineraryStore();
 const tripStore = useTripStore();
 const authStore = useAuthStore();
+const router = useRouter();
 
 /* ───── Refs and State ───── */
 const route = useRoute();
@@ -143,6 +155,8 @@ const isEdit = ref(false);
 const selectedEventDel = ref();
 const selectedEventId = ref();
 const selectedEvent = ref();
+const btnLoading = ref<boolean>(false);
+const loading = ref<boolean>(false);
 
 const userOptions = ref();
 const categoryOptions = Object.values(ItineraryEventCategory);
@@ -175,6 +189,7 @@ const form = ref<ItineraryEvent>({
 
 /* ───── Lifecycle ───── */
 onMounted(async () => {
+  loading.value = true;
   tripId.value = route.params.id as string;
   itineraryDay.value = route.params.dayId as string;
 
@@ -187,6 +202,7 @@ onMounted(async () => {
   const allUsers = authStore.allUsers || [];
   userOptions.value = allUsers.filter((user) => involvedUsersId.includes(user.uid));
   date.value = extractDateParts(itineraryStore.selectedDay!.id);
+  loading.value = false;
 });
 
 /* ───── Handlers ───── */
@@ -237,6 +253,7 @@ async function handleSubmit(val: NewItineraryEvent) {
   });
 
   isEdit.value = false;
+  showAddDialog.value = false;
 }
 
 function onEdit(event: ItineraryEvent) {
@@ -277,6 +294,36 @@ function onDetailsClick(event: object) {
   showDetails.value = true;
   selectedEvent.value = event;
   console.log(event);
+}
+
+async function onClickMarkAsComplete(event: Partial<ItineraryEvent>) {
+  event.isCompleted = !event.isCompleted;
+  btnLoading.value = true;
+  const response = await itineraryStore.editEventById(
+    tripId.value!,
+    itineraryStore.selectedDay!.id,
+    event.id!,
+    event,
+  );
+  btnLoading.value = false;
+
+  Notify.create({
+    position: 'top',
+    type: 'info',
+    message: event.isCompleted ? 'Event marked as complete' : 'Event mark as Incomplete',
+    color: response.success ? 'info' : 'negative',
+  });
+}
+
+async function onScheduleClick() {
+  await router.push({
+    path: '/itinerary/schedular',
+    query: {
+      tripId: tripId.value,
+      tripName: tripStore.activeTrip?.name,
+      date: itineraryStore.selectedDay!.id,
+    },
+  });
 }
 </script>
 

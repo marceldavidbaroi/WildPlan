@@ -1,0 +1,359 @@
+<template>
+  <q-page class="q-pa-md bg-page">
+    <!-- Sticky Toolbar -->
+    <div class="toolbar row q-gutter-sm items-center">
+      <div class="col-12 text-bold">
+        <div class="text-h6">{{ tripName }}</div>
+        <div class="text-caption">{{ date }}</div>
+      </div>
+      <div class="">
+        <q-btn
+          label="Add Event"
+          color="primary"
+          unelevated
+          class="q-px-md q-mr-sm"
+          :disable="selectedBlocks.length === 0"
+          @click="showDialog = true"
+        />
+        <q-btn
+          label="Export Events"
+          color="accent"
+          unelevated
+          class="q-px-md"
+          :disable="events.length === 0"
+          @click="exportEvents"
+        />
+      </div>
+    </div>
+
+    <!-- Scrollable Time Grid -->
+    <div class="scroll-area q-mt-md" :class="isDarkMode ? 'text-white' : 'text-black'">
+      <div class="row q-col-gutter-md">
+        <!-- AM -->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="q-pa-sm">
+            <div class="text-subtitle2 q-mb-sm">AM</div>
+            <div v-for="hour in 12" :key="'am-' + hour" class="q-mb-xs">
+              <div class="row items-center">
+                <div class="col-2 text-right text-caption text-bold">{{ hour }} AM</div>
+                <div class="col-10 row q-col-gutter-xs">
+                  <div
+                    v-for="quarter in 4"
+                    :key="'am-' + hour + '-' + quarter"
+                    class="col-3 interval-box"
+                    :class="{
+                      selected: isSelected('am', hour - 1, quarter - 1),
+                      hasEvent: hasEvent('am', hour - 1, quarter - 1),
+                    }"
+                    :style="getBlockStyle('am', hour - 1, quarter - 1)"
+                    @click="toggleSelection('am', hour - 1, quarter - 1)"
+                  >
+                    <span class="event-label"
+                      ><q-icon
+                        v-if="getBlockEventName('am', hour - 1, quarter - 1)"
+                        :name="getCategoryIcon(getBlockEventType('am', hour - 1, quarter - 1))"
+                        size="sm"
+                      />{{ getBlockEventName('am', hour - 1, quarter - 1) }}</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </q-card>
+        </div>
+
+        <!-- PM -->
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="q-pa-sm">
+            <div class="text-subtitle2 q-mb-sm">PM</div>
+            <div v-for="hour in 12" :key="'pm-' + hour" class="q-mb-xs">
+              <div class="row items-center">
+                <div class="col-2 text-right text-caption text-bold">{{ hour }} PM</div>
+                <div class="col-10 row q-col-gutter-xs">
+                  <div
+                    v-for="quarter in 4"
+                    :key="'pm-' + hour + '-' + quarter"
+                    class="col-3 interval-box"
+                    :class="{
+                      selected: isSelected('pm', hour - 1, quarter - 1),
+                      hasEvent: hasEvent('pm', hour - 1, quarter - 1),
+                    }"
+                    :style="getBlockStyle('pm', hour - 1, quarter - 1)"
+                    @click="toggleSelection('pm', hour - 1, quarter - 1)"
+                  >
+                    <span class="event-label">
+                      <q-icon
+                        v-if="getBlockEventName('pm', hour - 1, quarter - 1)"
+                        :name="getCategoryIcon(getBlockEventType('am', hour - 1, quarter - 1))"
+                        size="sm"
+                      />
+                      {{ getBlockEventName('pm', hour - 1, quarter - 1) }}</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </q-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialog -->
+    <q-dialog v-model="showDialog" persistent>
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Add Event</div>
+          <q-input v-model="eventName" label="Event Name" autofocus />
+          <q-select v-model="eventType" :options="eventTypeOption" label="Standard" filled />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="cancelEvent" />
+          <q-btn flat label="Save" @click="saveEvent" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue';
+import { useQuasar } from 'quasar';
+import { useRoute } from 'vue-router';
+import { ItineraryEventCategory } from '../store/types';
+
+const route = useRoute();
+const $q = useQuasar();
+
+const isDarkMode = ref<boolean>(false);
+const tripId = ref();
+const date = ref();
+const tripName = ref();
+
+onMounted(() => {
+  isDarkMode.value = $q.dark.isActive;
+  tripId.value = route.query.tripId;
+  date.value = route.query.date;
+  tripName.value = route.query.tripName;
+});
+
+type Period = 'am' | 'pm';
+interface BlockKey {
+  period: Period;
+  hour: number;
+  quarter: number;
+}
+interface ScheduledEvent {
+  name: string;
+  startTime: string;
+  endTime: string;
+  type: string;
+}
+
+const selectedBlocks = ref<BlockKey[]>([]);
+const eventName = ref('');
+const eventType = ref('');
+const eventTypeOption = Object.values(ItineraryEventCategory);
+const showDialog = ref(false);
+const events = reactive<ScheduledEvent[]>([]);
+
+const toggleSelection = (period: Period, hour: number, quarter: number) => {
+  const index = selectedBlocks.value.findIndex(
+    (b) => b.period === period && b.hour === hour && b.quarter === quarter,
+  );
+  if (index >= 0) {
+    selectedBlocks.value.splice(index, 1);
+  } else {
+    selectedBlocks.value.push({ period, hour, quarter });
+  }
+};
+
+const cancelEvent = () => {
+  showDialog.value = false;
+  eventName.value = '';
+};
+
+const saveEvent = () => {
+  if (!eventName.value.trim()) return;
+
+  const sorted = [...selectedBlocks.value].sort(compareBlock);
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+
+  events.push({
+    name: eventName.value,
+    startTime: blockToTimeString(first),
+    endTime: blockToTimeString(last, true),
+    type: eventType.value,
+  });
+
+  selectedBlocks.value = [];
+  eventName.value = '';
+  showDialog.value = false;
+};
+
+const exportEvents = () => {
+  console.log('Exported Events:', JSON.stringify(events, null, 2));
+};
+
+const isSelected = (p: Period, h: number, q: number) =>
+  selectedBlocks.value.some((b) => b.period === p && b.hour === h && b.quarter === q);
+
+const hasEvent = (p: Period, h: number, q: number) => !!getBlockEventName(p, h, q);
+
+const getBlockEventName = (p: Period, h: number, q: number) => {
+  const time = blockToTimeString({ period: p, hour: h, quarter: q });
+  return events.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.name ?? '';
+};
+const getBlockEventType = (p: Period, h: number, q: number) => {
+  const time = blockToTimeString({ period: p, hour: h, quarter: q });
+  return events.find((e) => isTimeInRange(time, e.startTime, e.endTime))?.type ?? '';
+};
+
+const blockToTimeString = (block: BlockKey, isEnd = false): string => {
+  let hour = block.hour === 0 ? 12 : block.hour;
+  let minute = block.quarter * 15;
+  let suffix = block.period.toUpperCase();
+
+  if (isEnd) {
+    minute += 15;
+    if (minute === 60) {
+      minute = 0;
+      hour += 1;
+      if (hour === 12) suffix = suffix === 'AM' ? 'PM' : 'AM';
+      else if (hour > 12) hour = 1;
+    }
+  }
+
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${suffix}`;
+};
+
+const parseTime = (t: string): number => {
+  const [hhmm, suffix] = t.split(' ');
+  let [h, m] = hhmm.split(':').map(Number);
+  if (suffix === 'PM' && h !== 12) h += 12;
+  if (suffix === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+};
+
+const isTimeInRange = (time: string, start: string, end: string): boolean => {
+  const t = parseTime(time);
+  return t >= parseTime(start) && t < parseTime(end);
+};
+
+const compareBlock = (a: BlockKey, b: BlockKey) => {
+  const periodWeight = { am: 0, pm: 1 };
+  return (
+    periodWeight[a.period] * 1000 +
+    a.hour * 4 +
+    a.quarter -
+    (periodWeight[b.period] * 1000 + b.hour * 4 + b.quarter)
+  );
+};
+
+// 🔵 Unique Soft Color Per Event
+const lightEventColors = [
+  '#dceefb',
+  '#ffe8cc',
+  '#e0f7fa',
+  '#f3e5f5',
+  '#dcedc8',
+  '#fff9c4',
+  '#fce4ec',
+  '#e1f5fe',
+  '#ede7f6',
+  '#f1f8e9',
+];
+const darkModeEventColors = [
+  '#3a6ea5', // darker blue (from #dceefb)
+  '#b37429', // richer orange (from #ffe8cc)
+  '#007c91', // deeper teal (from #e0f7fa)
+  '#7b4397', // deeper purple (from #f3e5f5)
+  '#5a7d1f', // darker green (from #dcedc8)
+  '#b2a52f', // muted yellow (from #fff9c4)
+  '#9c385a', // richer pink (from #fce4ec)
+  '#0277bd', // deeper light blue (from #e1f5fe)
+  '#5c49a1', // richer lavender (from #ede7f6)
+  '#607d35', // deeper lime green (from #f1f8e9)
+];
+
+const getBlockStyle = (p: Period, h: number, q: number) => {
+  const time = blockToTimeString({ period: p, hour: h, quarter: q });
+  const eventIndex = events.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
+  if (eventIndex !== -1) {
+    let eventColors = null;
+    if (isDarkMode) {
+      eventColors = darkModeEventColors;
+    } else {
+      eventColors = lightEventColors;
+    }
+    return {
+      backgroundColor: eventColors[eventIndex % eventColors.length],
+      border: '1px solid #ccc',
+    };
+  }
+  return {};
+};
+
+function getCategoryIcon(category: string): string {
+  switch (category.toLowerCase()) {
+    case 'activity':
+      return 'directions_run';
+    case 'meal':
+      return 'restaurant';
+    case 'travel':
+      return 'commute';
+    case 'lodging':
+      return 'hotel';
+    case 'campchore':
+      return 'construction';
+    case 'meeting':
+      return 'groups';
+    case 'relaxation':
+      return 'spa';
+    case 'other':
+      return 'more_horiz';
+    default:
+      return 'event_note';
+  }
+}
+</script>
+
+<style scoped>
+.scroll-area {
+  max-height: 75vh;
+  overflow-y: auto;
+}
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ccc;
+}
+
+.interval-box {
+  height: 40px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: var(--q-bg);
+  transition: all 0.2s;
+}
+.interval-box:hover {
+  opacity: 0.85;
+}
+.interval-box.selected {
+  border: 2px dashed #42a5f5;
+  background-color: rgba(66, 165, 245, 0.15);
+}
+.event-label {
+  font-size: 0.65rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+</style>

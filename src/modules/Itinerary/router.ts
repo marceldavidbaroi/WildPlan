@@ -12,6 +12,11 @@ const authRoutes: RouteRecordRaw[] = [
         component: () => import('./pages/ItineraryIndex.vue'),
       },
       {
+        name: 'schedular',
+        path: 'schedular',
+        component: () => import('./pages/SchedularIndex.vue'),
+      },
+      {
         name: 'itinerary-details',
         path: ':id',
         component: () => import('./pages/ItineraryDetailsIndex.vue'),
