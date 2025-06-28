@@ -51,17 +51,40 @@
           </q-card-section>
         </q-card>
       </div>
-      <div class="text-h6">
-        Your Trip Itinerary
-        <q-btn
+      <div class="row justify-between">
+        <div class="text-h6">Your Trip Itinerary</div>
+        <div class="">
+          <q-btn color="info" no-caps flat label="Preview" @click="onPreview" />
+        </div>
+      </div>
+      <div>
+        <q-banner
           v-if="itineraryStore.itineraryDays.length === 0 || loadMoreDays"
-          dense
-          size="sm"
-          no-caps
-          color="primary"
-          label="Add Days of Trip"
-          @click="addDummyDays"
-        />
+          class="bg-info text-white q-pa-md rounded-borders shadow-2"
+          style="border-left: 5px solid #ffffffaa"
+        >
+          <div class="row items-center q-col-gutter-md">
+            <q-icon name="event" size="md" class="q-mr-sm" />
+            <div class="col">
+              <div class="text-h6">Quick Add Travel Days</div>
+              <div class="text-subtitle2 text-white text-opacity-80">
+                Instantly populate each day of your trip with just one click!
+              </div>
+            </div>
+            <div class="col-auto">
+              <q-btn
+                dense
+                no-caps
+                size="md"
+                color="white"
+                text-color="primary"
+                unelevated
+                label="Add Days"
+                @click="addDummyDays"
+              />
+            </div>
+          </div>
+        </q-banner>
       </div>
 
       <div class="q-pa-md row items-start q-gutter-md">
@@ -224,6 +247,14 @@ async function addDummyDays() {
   loadMoreDays.value = false;
   await fetchAllItineraryDays();
 }
+const onPreview = () => {
+  const url = router.resolve({
+    path: '/external/trip_days',
+    query: { tripId: tripId.value },
+  }).href;
+
+  window.open(url, '_blank'); // Opens in a new tab or window
+};
 </script>
 
 <style scoped>

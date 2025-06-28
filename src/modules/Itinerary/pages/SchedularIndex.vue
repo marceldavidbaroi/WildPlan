@@ -3,6 +3,13 @@
     <!-- Sticky Toolbar -->
     <div class="toolbar row q-gutter-sm items-center">
       <div class="col-12 text-bold">
+        <q-btn
+          color="warning"
+          flat
+          dense
+          icon="arrow_back"
+          @click="router.push({ path: `/itinerary/${tripId}/day/${date}` })"
+        />
         <div class="text-h6">{{ tripName }}</div>
         <div class="text-caption">{{ date }}</div>
       </div>
@@ -129,13 +136,14 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { Notify, useQuasar } from 'quasar';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ItineraryEventCategory } from '../store/types';
 import { useItineraryStore } from '../store';
 import type { NewItineraryEvent, ItineraryEvent } from '../store/types';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
 
 const route = useRoute();
+const router = useRouter();
 const $q = useQuasar();
 const itineraryStore = useItineraryStore();
 

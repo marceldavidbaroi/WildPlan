@@ -7,6 +7,13 @@
 
     <div v-else>
       <div>
+        <q-btn
+          color="warning"
+          flat
+          dense
+          icon="arrow_back"
+          @click="router.push({ path: `/itinerary/${tripId}` })"
+        />
         <q-card
           flat
           class="q-my-md"

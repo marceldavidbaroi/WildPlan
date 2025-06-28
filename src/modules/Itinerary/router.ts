@@ -39,6 +39,11 @@ const authRoutes: RouteRecordRaw[] = [
         path: 'trip_day',
         component: () => import('./pages/DailyPlanPreview.vue'),
       },
+      {
+        name: 'itinerary-days',
+        path: 'trip_days',
+        component: () => import('./pages/TripDaysPlanPreview.vue'),
+      },
     ],
   },
 ];
