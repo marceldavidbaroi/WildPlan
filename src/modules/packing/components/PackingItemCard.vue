@@ -44,9 +44,10 @@
 
                   <q-btn
                     :label="item.isPacked ? 'Packed' : 'Not Packed'"
-                    :color="item.isPacked ? 'primary' : 'grey-7'"
+                    :color="item.isPacked ? 'info' : 'info'"
+                    text-color="black"
+                    no-caps
                     size="sm"
-                    flat
                     dense
                     class="q-ml-sm"
                     :loading="props.loading"
@@ -124,9 +125,10 @@
 
                   <q-btn
                     :label="item.isPacked ? 'Packed ' : 'Not Packed '"
-                    :color="item.isPacked ? 'primary' : 'grey-7'"
+                    :color="item.isPacked ? 'info' : 'info'"
+                    text-color="black"
+                    no-caps
                     size="sm"
-                    flat
                     dense
                     class="q-ml-sm"
                     :loading="props.loading"

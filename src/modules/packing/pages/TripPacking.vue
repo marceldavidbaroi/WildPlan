@@ -4,6 +4,34 @@
       <div class="row justify-end">
         <q-btn color="primary" flat icon="add" class="" @click="openAdd" />
       </div>
+
+      <!-- filter options -->
+      <div class="row q-gutter-sm">
+        <div class="col-12 col-sm-4 col-md-2">
+          <q-select
+            v-model="options.category"
+            :options="categoryOptions"
+            label="Category"
+            emit-value
+            map-options
+            outlined
+            dense
+            @update:model-value="getAll"
+          />
+        </div>
+        <div class="col-12 col-sm-4 col-md-2">
+          <q-select
+            v-model="options.type"
+            :options="typeOption"
+            label="Type"
+            emit-value
+            map-options
+            outlined
+            dense
+            @update:model-value="getAll"
+          />
+        </div>
+      </div>
       <!-- Add mode -->
       <AddDialog
         :visible="showDialog"
@@ -46,7 +74,13 @@ import PackingItemCard from '../components/PackingItemCard.vue';
 import { onMounted, ref } from 'vue';
 import { usePackingStore } from '../store';
 import { useAuthStore } from 'src/modules/auth/store';
-import type { PackingItemCreate, PackingItem, PackingFetchOptions } from '../store/types';
+import type {
+  PackingItemCreate,
+  PackingItem,
+  PackingFetchOptions,
+  PackingCategory,
+  PackingType,
+} from '../store/types';
 import { Notify } from 'quasar';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
 const packingStore = usePackingStore();
@@ -56,6 +90,9 @@ const authStore = useAuthStore();
 const userId = ref();
 const options = ref<PackingFetchOptions>({
   tripId: '',
+  type: null,
+  category: null,
+  packedStatus: null,
 });
 const loading = ref<boolean>(false);
 const showDeleteUserDialog = ref<boolean>(false);
@@ -64,11 +101,30 @@ const showDialog = ref(false);
 const isEdit = ref(false);
 const itemToEdit = ref<PackingItem | null>(null);
 
+const categoryOptions: { label: string; value: PackingCategory | null }[] = [
+  { label: 'All', value: null },
+  { label: 'Clothing', value: 'clothing' },
+  { label: 'Food', value: 'food' },
+  { label: 'Camping Gear', value: 'campingGear' },
+  { label: 'Cooking', value: 'cooking' },
+  { label: 'Safety', value: 'safety' },
+  { label: 'Electronics', value: 'electronics' },
+  { label: 'Personal Care', value: 'personalCare' },
+  { label: 'Miscellaneous', value: 'misc' },
+];
+
+const typeOption: { label: string; value: PackingType | null }[] = [
+  { label: 'All', value: null },
+  { label: 'Personal', value: 'personal' },
+  { label: 'Shared', value: 'shared' },
+];
+
 onMounted(async () => {
   loading.value = true;
   userId.value = authStore.profile?.uid;
   tripId.value = route.params.id;
   options.value.tripId = tripId.value;
+
   await getAll();
 
   loading.value = false;

@@ -8,6 +8,8 @@ import type {
 
 import * as PackingService from '../service/packing.service';
 import { Timestamp } from 'firebase/firestore';
+import { useAuthStore } from 'src/modules/auth/store';
+const authStore = useAuthStore();
 interface PackingItemRaw extends Omit<PackingItem, 'createdAt' | 'updatedAt'> {
   createdAt: Timestamp | number;
   updatedAt: Timestamp | number;
@@ -47,8 +49,14 @@ export async function getPackingItems(
 
   if (response.success && response.data) {
     const normalized = response.data.map(normalizePackingItem);
-    this.items = normalized;
-    response.data = normalized;
+    const filteredData = normalized.filter(
+      (data) =>
+        data.type === 'shared' ||
+        (data.type === 'personal' && data.ownerId === authStore.profile!.uid),
+    );
+    console.log(filteredData);
+    this.items = filteredData;
+    response.data = filteredData;
   } else {
     this.items = [];
     this.error = response.message;

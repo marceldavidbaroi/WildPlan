@@ -107,7 +107,6 @@ import { Notify } from 'quasar';
 
 import { useTripStore } from '../../trip/store';
 import { useAuthStore } from 'src/modules/auth/store';
-import { useItineraryStore } from '../store';
 import type { Trip, TripCreateData } from '../../trip/store/types';
 import type { UserProfile } from '../../auth/store/types';
 
@@ -117,7 +116,6 @@ import router from 'src/router';
 
 const tripStore = useTripStore();
 const authStore = useAuthStore();
-const itineraryStore = useItineraryStore();
 
 const trips = ref<Trip[]>([]);
 const allUsers = ref<UserProfile[]>(authStore.allUsers || []);

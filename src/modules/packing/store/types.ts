@@ -72,10 +72,10 @@ export interface PackingResponse<T = unknown> {
 // ✅ Filter options when fetching (light, no pagination)
 export interface PackingFetchOptions {
   tripId: string;
-  type?: PackingType; // Filter: personal/shared
+  type?: PackingType | null; // Filter: personal/shared
   ownerId?: string; // Filter: by user
-  category?: PackingCategory; // Filter: category
-  packedStatus?: boolean; // Filter: packed/unpacked
+  category?: PackingCategory | null; // Filter: category
+  packedStatus?: boolean | null; // Filter: packed/unpacked
 }
 
 // ✅ Store state for Pinia
