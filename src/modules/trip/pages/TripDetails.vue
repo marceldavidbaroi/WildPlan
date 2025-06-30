@@ -62,6 +62,17 @@
 
     <!-- Details Section -->
     <div class="trip-details q-pa-md">
+      <div class="flex flex-center">
+        <q-btn
+          color="info"
+          flat
+          no-caps
+          dense
+          size="md"
+          label="Itinarary"
+          @click="onItinararyClick"
+        />
+      </div>
       <q-separator />
 
       <div class="row q-mt-md">
@@ -541,6 +552,10 @@ function onShare() {
         icon: 'error',
       });
     });
+}
+
+async function onItinararyClick() {
+  await router.push({ path: `/itinerary/${id.value}` });
 }
 </script>
 
