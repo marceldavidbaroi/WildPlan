@@ -25,7 +25,7 @@
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" @click="cancel" />
+        <q-btn flat label="Cancel" color="grey" @click="cancel" />
         <q-btn
           :label="loading ? 'Deleting...' : 'Delete'"
           color="negative"

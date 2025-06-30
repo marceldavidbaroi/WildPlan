@@ -8,11 +8,6 @@
             <q-tooltip class="bg-primary">Filters</q-tooltip>
           </q-btn>
         </div>
-        <div class="row items-center q-gutter-sm">
-          <q-btn flat icon="add" color="primary" @click="onAddClick">
-            <q-tooltip class="bg-primary">Add Trip</q-tooltip>
-          </q-btn>
-        </div>
       </div>
       <!-- filter -->
 
@@ -184,11 +179,6 @@ const fetchTripsPage = async () => {
   }
 
   loading.value = false;
-};
-
-// === Event Handlers ===
-const onAddClick = () => {
-  showAddTripPopup.value = true;
 };
 
 const onCardClick = async (id: string) => {

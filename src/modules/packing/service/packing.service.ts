@@ -124,7 +124,7 @@ export async function addPackingItem(
 export async function updatePackingItem(
   tripId: string,
   itemId: string,
-  updates: Partial<PackingItemCreate>,
+  updates: Partial<PackingItem>,
 ): Promise<PackingResponse<void>> {
   try {
     const ref = doc(getPackingCollection(tripId), itemId);

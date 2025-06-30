@@ -86,7 +86,7 @@ export async function updatePackingItem(
   this: PackingState,
   tripId: string,
   itemId: string,
-  updates: Partial<PackingItemCreate>,
+  updates: Partial<PackingItem>,
 ): Promise<PackingResponse<void>> {
   this.loading = true;
   this.error = null;

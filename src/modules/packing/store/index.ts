@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import type { PackingState } from './types';
 import * as actionFns from './action';
 
-export const useItineraryStore = defineStore('packing', {
+export const usePackingStore = defineStore('packing', {
   state: (): PackingState => ({
     items: [],
     loading: false,
