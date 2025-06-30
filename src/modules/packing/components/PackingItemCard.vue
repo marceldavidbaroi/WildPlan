@@ -1,166 +1,99 @@
 <template>
   <div class="row q-col-gutter-md">
-    <!-- Not Packed Items first -->
-    <template v-if="notPackedItems.length">
-      <div class="col-12">
-        <h6>Not Packed</h6>
-      </div>
-      <div
-        v-for="item in notPackedItems"
-        :key="item.id"
-        class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2"
-      >
-        <!-- Outer flex container for card + buttons -->
-        <div class="luggage-wrapper">
-          <!-- Luggage Card -->
-          <div :class="['luggage-card', categoryClass(item.category)]">
-            <!-- Handle on top -->
-            <div class="luggage-handle"></div>
-
-            <div class="luggage-content">
-              <div class="luggage-info">
-                <div class="text-h6 q-mb-xs">{{ item.name }}</div>
-                <div class="text-subtitle2 q-mb-sm">Qty: {{ item.quantity }}</div>
-
-                <div class="text-caption">
-                  <q-icon name="event" size="16px" class="q-mr-xs" />
-                  {{ formatDueDate(item.dueDate ?? 'unknown') }}
-                </div>
-
-                <div class="text-caption q-mt-xs">
-                  <q-icon name="timer" size="16px" class="q-mr-xs" />
-                  {{ getRemainingTime(item.dueDate ?? 'unknown') }}
-                </div>
-
-                <div class="text-caption q-mt-xs">
-                  <q-icon name="info" size="16px" class="q-mr-xs" />
-                  {{ item.notes || 'No notes' }}
-                </div>
-
-                <div class="q-mt-md">
-                  <q-badge color="grey-8" align="top" outline>
-                    {{ item.type.toUpperCase() }}
-                  </q-badge>
-
-                  <q-btn
-                    :label="item.isPacked ? 'Packed' : 'Not Packed'"
-                    :color="item.isPacked ? 'info' : 'info'"
-                    text-color="black"
-                    no-caps
-                    size="sm"
-                    dense
-                    class="q-ml-sm"
-                    :loading="props.loading"
-                    @click="$emit('toggle-packed', item)"
-                  />
-                </div>
-              </div>
-
-              <!-- Buttons container -->
-              <div class="luggage-actions row no-wrap items-center justify-end q-gutter-sm">
-                <q-btn
-                  icon="edit"
-                  size="sm"
-                  flat
-                  dense
-                  color="info"
-                  @click="$emit('edit-item', item)"
-                />
-                <q-btn
-                  icon="delete"
-                  size="sm"
-                  flat
-                  dense
-                  color="negative"
-                  @click="$emit('delete-item', item.id)"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
     <!-- Packed Items next -->
-    <template v-if="packedItems.length">
-      <div class="col-12 q-mt-lg">
-        <h6>Packed</h6>
-      </div>
-      <div
-        v-for="item in packedItems"
-        :key="item.id"
-        class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2"
-      >
-        <!-- Outer flex container for card + buttons -->
-        <div class="luggage-wrapper">
-          <!-- Luggage Card -->
-          <div :class="['luggage-card', categoryClass(item.category)]">
-            <!-- Handle on top -->
-            <div class="luggage-handle"></div>
+    <div class="col-12 q-mt-lg"></div>
+    <div v-for="item in items" :key="item.id" class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
+      <!-- Outer flex container for card + buttons -->
+      <div class="luggage-wrapper">
+        <!-- Luggage Card -->
+        <div :class="['luggage-card', categoryClass(item.category)]">
+          <!-- Handle on top -->
+          <div class="luggage-handle"></div>
 
-            <div class="luggage-content">
-              <div class="luggage-info">
-                <div class="text-h6 q-mb-xs">{{ item.name }}</div>
-                <div class="text-subtitle2 q-mb-sm">Qty: {{ item.quantity }}</div>
+          <div class="luggage-content">
+            <div class="luggage-info">
+              <div class="text-h6 q-mb-xs">{{ item.name }}</div>
+              <div class="text-subtitle2 q-mb-sm">Qty: {{ item.quantity }}</div>
 
-                <div class="text-caption">
-                  <q-icon name="event" size="16px" class="q-mr-xs" />
-                  {{ formatDueDate(item.dueDate ?? 'unknown') }}
-                </div>
-
-                <div class="text-caption q-mt-xs">
-                  <q-icon name="timer" size="16px" class="q-mr-xs" />
-                  {{ getRemainingTime(item.dueDate ?? 'unknown') }}
-                </div>
-
-                <div class="text-caption q-mt-xs">
-                  <q-icon name="info" size="16px" class="q-mr-xs" />
-                  {{ item.notes || 'No notes' }}
-                </div>
-
-                <div class="q-mt-md">
-                  <q-badge color="grey-8" align="top" outline>
-                    {{ item.type.toUpperCase() }}
-                  </q-badge>
-
-                  <q-btn
-                    :label="item.isPacked ? 'Packed ' : 'Not Packed '"
-                    :color="item.isPacked ? 'info' : 'info'"
-                    text-color="black"
-                    no-caps
-                    size="sm"
-                    dense
-                    class="q-ml-sm"
-                    :loading="props.loading"
-                    @click="$emit('toggle-packed', item)"
-                  />
-                </div>
+              <div class="text-caption">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                {{ formatDueDate(item.dueDate ?? 'unknown') }}
               </div>
 
-              <!-- Buttons container -->
-              <div class="luggage-actions row no-wrap items-center justify-end q-gutter-sm">
+              <div class="text-caption q-mt-xs">
+                <q-icon name="timer" size="16px" class="q-mr-xs" />
+                {{ getRemainingTime(item.dueDate ?? 'unknown') }}
+              </div>
+
+              <div class="text-caption q-mt-xs">
+                <q-icon name="info" size="16px" class="q-mr-xs" />
+                {{ item.notes || 'No notes' }}
+              </div>
+
+              <div class="q-mt-md">
+                <q-badge color="grey-8" align="top" outline>
+                  {{ item.type.toUpperCase() }}
+                </q-badge>
+
+                <q-badge v-if="item.type === 'personal'" color="grey-8" align="top" outline>
+                  {{ item.isPacked ? 'Packed' : 'Not Packed' }}
+                </q-badge>
+                <q-badge v-else color="grey-8" align="top" outline>
+                  {{ findPackingState(item)?.state ? 'Packed' : 'Not Packed' }}
+                </q-badge>
                 <q-btn
-                  icon="edit"
+                  v-if="showPackingStateBtn(item)"
+                  :color="item.isPacked ? 'info' : 'info'"
+                  icon="inventory "
+                  text-color="black"
+                  no-caps
                   size="sm"
-                  flat
                   dense
-                  color="info"
-                  @click="$emit('edit-item', item)"
+                  class="q-ml-sm"
+                  :loading="props.loading"
+                  @click="$emit('toggle-packed', item)"
                 />
                 <q-btn
-                  icon="delete"
+                  v-else
+                  label="Add to your list"
+                  :color="item.isPacked ? 'info' : 'info'"
+                  text-color="black"
+                  no-caps
                   size="sm"
-                  flat
                   dense
-                  color="negative"
-                  @click="$emit('delete-item', item.id)"
+                  class="q-ml-sm"
+                  :loading="props.loading"
+                  @click="$emit('add-item', item)"
                 />
               </div>
+            </div>
+
+            <!-- Buttons container -->
+            <div
+              v-if="item.ownerId === uid"
+              class="luggage-actions row no-wrap items-center justify-end q-gutter-sm"
+            >
+              <q-btn
+                icon="edit"
+                size="sm"
+                flat
+                dense
+                color="info"
+                @click="$emit('edit-item', item)"
+              />
+              <q-btn
+                icon="delete"
+                size="sm"
+                flat
+                dense
+                color="negative"
+                @click="$emit('delete-item', item.id)"
+              />
             </div>
           </div>
         </div>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -171,6 +104,7 @@ import { PackingItem } from '../store/types';
 const props = defineProps<{
   items: PackingItem[];
   loading: boolean;
+  uid: string;
 }>();
 
 const notPackedItems = computed(() => props.items.filter((item) => !item.isPacked));
@@ -214,6 +148,23 @@ const categoryToClass: Record<string, string> = {
 };
 
 const categoryClass = (category: string) => categoryToClass[category] || 'day-bg-sunday';
+
+function showPackingStateBtn(item: PackingItem) {
+  if (item.type === 'personal') {
+    return true;
+  } else {
+    if (Array.isArray(item.isPacked)) {
+      return item.isPacked.some((user) => user.uid === props.uid);
+    }
+  }
+  return false;
+}
+
+function findPackingState(item: PackingItem) {
+  if (Array.isArray(item.isPacked)) {
+    return item.isPacked.find((u) => u.uid === props.uid);
+  }
+}
 </script>
 
 <style scoped>

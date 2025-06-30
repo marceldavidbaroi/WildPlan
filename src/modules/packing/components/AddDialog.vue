@@ -50,7 +50,7 @@
             required
           />
 
-          <q-toggle v-model="form.isPacked" label="Packed?" left-label color="primary" />
+          <!-- <q-toggle v-model="form.isPacked" label="Packed?" left-label color="primary" /> -->
 
           <q-input v-model="form.dueDate" label="Due Date" outlined dense readonly>
             <template #append>

@@ -48,9 +48,11 @@
       <PackingItemCard
         :items="packingStore.items"
         :loading="packingStore.loading"
+        :uid="authStore.profile!.uid"
         @toggle-packed="togglePacked"
         @edit-item="openEdit"
         @delete-item="deleteItem"
+        @add-item="addItemForUser"
       />
 
       <DeleteDialog
@@ -80,6 +82,7 @@ import type {
   PackingFetchOptions,
   PackingCategory,
   PackingType,
+  PackedStatus,
 } from '../store/types';
 import { Notify } from 'quasar';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
@@ -136,6 +139,14 @@ async function getAll() {
 }
 
 async function handleAddItem(val: PackingItemCreate) {
+  if (val.type === 'personal') {
+    val.isPacked = false;
+  } else {
+    val.isPacked = [{ uid: authStore.profile!.uid, state: false }];
+  }
+
+  console.log(val);
+
   const response = await packingStore.addPackingItem(tripId.value, val);
 
   Notify.create({
@@ -150,14 +161,26 @@ async function handleAddItem(val: PackingItemCreate) {
   }
 }
 async function togglePacked(val: PackingItem) {
-  const response = await packingStore.togglePackedStatus(tripId.value, val.id, !val.isPacked);
-  if (response.success) {
+  let response;
+  if (val.type === 'personal') {
+    response = await packingStore.togglePackedStatus(tripId.value, val.id, !val.isPacked);
+  } else {
+    if (Array.isArray(val.isPacked)) {
+      const userStatus = val.isPacked.find((u) => u.uid === authStore.profile!.uid);
+      if (userStatus) {
+        userStatus.state = !userStatus.state;
+      }
+      response = await packingStore.updatePackingItem(tripId.value, val.id, val);
+    }
+  }
+
+  if (response?.success) {
     await getAll();
   }
   Notify.create({
     position: 'top',
-    message: response.message,
-    color: response.success ? 'info' : 'negative',
+    message: response!.message,
+    color: response!.success ? 'info' : 'negative',
     type: 'info',
   });
 }
@@ -218,6 +241,25 @@ function handleClose() {
   showDialog.value = false;
   isEdit.value = false;
   itemToEdit.value = null;
+}
+
+async function addItemForUser(item: PackingItem) {
+  if (Array.isArray(item.isPacked)) {
+    item.isPacked.push({ uid: authStore.profile!.uid, state: false });
+  }
+  console.log('updated', item);
+
+  const response = await packingStore.updatePackingItem(tripId.value, item.id, item);
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    color: response.success ? 'info' : 'negative',
+    type: 'info',
+  });
+
+  if (response.success) {
+    await getAll();
+  }
 }
 </script>
 

@@ -16,6 +16,11 @@ export type PackingCategory =
 // ✅ Who owns it: personal or shared
 export type PackingType = 'personal' | 'shared';
 
+// For shared items only:
+export type PackedStatus = {
+  uid: string;
+  state: boolean;
+};
 // ✅ New item when creating
 export interface PackingItemCreate {
   tripId: string;
@@ -24,7 +29,7 @@ export interface PackingItemCreate {
   quantity: number;
   category: PackingCategory;
   type: PackingType;
-  isPacked: boolean;
+  isPacked: boolean | PackedStatus[];
   dueDate?: string; // Optional: pack by date (ISO)
   notes?: string;
 }
@@ -37,7 +42,7 @@ export interface PackingItemDoc {
   quantity: number;
   category: PackingCategory;
   type: PackingType;
-  isPacked: boolean;
+  isPacked: boolean | PackedStatus[];
   dueDate?: string;
   notes?: string;
   createdAt: Timestamp;
@@ -53,7 +58,7 @@ export interface PackingItem {
   quantity: number;
   category: PackingCategory;
   type: PackingType;
-  isPacked: boolean;
+  isPacked: boolean | PackedStatus[];
   dueDate?: string;
   notes?: string;
   createdAt: number;
