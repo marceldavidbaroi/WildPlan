@@ -161,8 +161,6 @@ async function handleAddItem(val: PackingItemCreate) {
     val.isPacked = [{ uid: authStore.profile!.uid, state: false }];
   }
 
-  console.log(val);
-
   const response = await packingStore.addPackingItem(tripId.value, val);
 
   Notify.create({
@@ -263,7 +261,6 @@ async function addItemForUser(item: PackingItem) {
   if (Array.isArray(item.isPacked)) {
     item.isPacked.push({ uid: authStore.profile!.uid, state: false });
   }
-  console.log('updated', item);
 
   const response = await packingStore.updatePackingItem(tripId.value, item.id, item);
   Notify.create({

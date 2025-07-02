@@ -150,7 +150,6 @@ const dayDiff = ref();
 const loadMoreDays = ref(false);
 
 onMounted(async () => {
-  console.log(route.params.id);
   tripId.value = route.params.id as string;
   startDate.value = tripStore.activeTrip?.startDate;
   endDate.value = tripStore.activeTrip?.endDate;
@@ -162,11 +161,9 @@ onMounted(async () => {
         ) + 1
       : 0;
 
-  console.log(dayDiff.value);
   loadMoreDays.value = itineraryStore.itineraryDays.length < dayDiff.value;
   await fetchAllItineraryDays();
   await tripStore.fetchTrip(tripId.value);
-  console.log('Trip fetched:', tripStore.activeTrip);
 });
 
 async function onClickItineraryDay(val: string) {
@@ -234,15 +231,12 @@ function allDays() {
     dates.push(current.toISOString().split('T')[0]!);
     current.setDate(current.getDate() + 1);
   }
-  console.log('All dates:', dates);
 
   return dates;
 }
 async function addDummyDays() {
-  console.log(allDaysofTrip.value);
   for (const day of allDaysofTrip.value!) {
     await itineraryStore.createDay(tripId.value!, day);
-    console.log(day);
   }
   loadMoreDays.value = false;
   await fetchAllItineraryDays();

@@ -54,7 +54,6 @@ export async function getPackingItems(
         data.type === 'shared' ||
         (data.type === 'personal' && data.ownerId === authStore.profile!.uid),
     );
-    console.log(filteredData);
     this.items = filteredData;
     response.data = filteredData;
   } else {

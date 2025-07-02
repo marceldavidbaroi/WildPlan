@@ -245,7 +245,6 @@ onMounted(async () => {
   itineraryDay.value = route.params.dayId as string;
 
   const res = await itineraryStore.getDay(tripId.value, itineraryDay.value);
-  console.log(res);
   await tripStore.fetchTrip(tripId.value);
   await authStore.fetchAllUser();
 
@@ -254,15 +253,10 @@ onMounted(async () => {
   const involvedUsersId = tripStore.activeTrip?.involvedUsers || [];
 
   const allUsers = authStore.allUsers || [];
-  console.log('this are the involved users', involvedUsersId);
   userOptions.value = allUsers.filter((user) => involvedUsersId.includes(user.uid));
-  console.log('all users', allUsers);
-  console.log('this are the option for the user ', userOptions.value);
   date.value = extractDateParts(itineraryStore.selectedDay!.id);
   await packingStore.getPackingItems({ tripId: tripId.value });
   packingItems.value = packingStore.items.filter((item) => item.type === 'shared');
-
-  console.log('packing items', packingStore.items);
 
   loading.value = false;
 });
@@ -378,7 +372,6 @@ function handleCancelAll() {
 function onDetailsClick(event: object) {
   showDetails.value = true;
   selectedEvent.value = event;
-  console.log(event);
 }
 
 async function onClickMarkAsComplete(event: Partial<ItineraryEvent>) {
@@ -424,7 +417,6 @@ const onPreview = () => {
       date: itineraryStore.selectedDay!.id,
     },
   }).href;
-  console.log(url);
   window.open(url, '_blank');
 };
 </script>

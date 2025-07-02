@@ -251,7 +251,6 @@ const toggleSelection = (period: Period, hour: number, quarter: number) => {
     // Prefill dialog with existing event
     const event = events.value[eventIndex];
     selectedEvent.value = event;
-    console.log('selected evebt ', event);
     eventName.value = event.name;
     eventType.value = event.category;
     isEditMode.value = true;
@@ -425,7 +424,7 @@ const getBlockStyle = (p: Period, h: number, q: number) => {
   const eventIndex = events.value.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
   if (eventIndex !== -1) {
     let eventColors = null;
-    if (isDarkMode) {
+    if (isDarkMode.value) {
       eventColors = darkModeEventColors;
     } else {
       eventColors = lightEventColors;
@@ -466,7 +465,7 @@ const deleteAllEvent = () => {
 };
 
 async function handleConfirmAll() {
-  const response = await itineraryStore.deleteAllEvents(tripId.value!, date.value);
+  const response = await itineraryStore.deleteAllEvents(tripId.value, date.value);
 
   if (response?.success) {
     const response = await itineraryStore.getDay(tripId.value, date.value);
