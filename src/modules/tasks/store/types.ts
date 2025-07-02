@@ -10,7 +10,7 @@ export type TaskPriority = 'low' | 'medium' | 'high';
 /**
  * ✅ Task status for filtering and UI
  */
-export type TaskStatus = 'pending' | 'inProgress' | 'completed';
+export type TaskStatus = 'pending' | 'inProgress' | 'completed' | 'cancelled';
 
 /**
  * ✅ Basic task create input
@@ -22,6 +22,7 @@ export interface TaskCreate {
   assignedTo?: string[]; // Array of user UIDs
   dueDate?: string; // ISO date
   priority?: TaskPriority;
+  ownerId: string; // ✅ New: ID of the user who created the task
 }
 
 /**
@@ -35,6 +36,7 @@ export interface TaskDoc {
   dueDate?: string;
   priority: TaskPriority;
   status: TaskStatus;
+  ownerId: string; // ✅ New: owner UID
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -51,6 +53,7 @@ export interface Task {
   dueDate?: string;
   priority: TaskPriority;
   status: TaskStatus;
+  ownerId: string; // ✅ New: owner UID
   createdAt: number;
   updatedAt: number;
 }

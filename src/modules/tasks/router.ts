@@ -11,6 +11,11 @@ const authRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('./pages/TaskIndex.vue'),
       },
+      {
+        name: 'tasks-list',
+        path: ':id',
+        component: () => import('./pages/TaskList.vue'),
+      },
     ],
   },
 ];

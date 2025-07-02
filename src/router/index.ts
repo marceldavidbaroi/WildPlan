@@ -5,6 +5,7 @@ import dashboard from 'src/modules/dashboard/router';
 import trip from 'src/modules/trip/router';
 import itinerary from 'src/modules/Itinerary/router';
 import packing from 'src/modules/packing/router';
+import tasks from 'src/modules/tasks/router';
 
 const routes: RouteRecordRaw[] = [
   ...auth,
@@ -12,6 +13,7 @@ const routes: RouteRecordRaw[] = [
   ...trip,
   ...itinerary,
   ...packing,
+  ...tasks,
 
   {
     path: '/unauthorized',
