@@ -57,15 +57,17 @@
         @close="handleClose"
       />
 
-      <PackingItemCard
-        :items="packingStore.items"
-        :loading="packingStore.loading"
-        :uid="authStore.profile!.uid"
-        @toggle-packed="togglePacked"
-        @edit-item="openEdit"
-        @delete-item="deleteItem"
-        @add-item="addItemForUser"
-      />
+      <div class="q-pt-xl">
+        <PackingItemCard
+          :items="packingStore.items"
+          :loading="packingStore.loading"
+          :uid="authStore.profile!.uid"
+          @toggle-packed="togglePacked"
+          @edit-item="openEdit"
+          @delete-item="deleteItem"
+          @add-item="addItemForUser"
+        />
+      </div>
 
       <DeleteDialog
         v-model="showDeleteUserDialog"

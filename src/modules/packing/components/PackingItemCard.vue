@@ -38,14 +38,14 @@
               </div>
 
               <div class="q-mt-md">
-                <q-badge color="grey-8" align="top" outline>
+                <q-badge color="warning" align="top" outline class="q-mr-sm">
                   {{ item.type.toUpperCase() }}
                 </q-badge>
 
-                <q-badge v-if="item.type === 'personal'" color="grey-8" align="top" outline>
+                <q-badge v-if="item.type === 'personal'" color="warning" align="top" outline>
                   {{ item.isPacked ? 'Packed' : 'Not Packed' }}
                 </q-badge>
-                <q-badge v-else color="grey-8" align="top" outline>
+                <q-badge v-else color="warning" align="top" outline>
                   {{ findPackingState(item)?.state ? 'Packed' : 'Not Packed' }}
                 </q-badge>
                 <q-btn
