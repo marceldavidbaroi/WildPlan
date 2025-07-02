@@ -99,7 +99,7 @@
                 />
                 <q-select
                   v-model="localForm.packingItemsNeeded"
-                  :options="packingItemOptions"
+                  :options="props.packingItems"
                   label="Packing Items Needed"
                   multiple
                   use-chips
@@ -107,7 +107,25 @@
                   dense
                   square
                   clearable
+                  emit-value
+                  map-options
+                  option-label="name"
+                  option-value="id"
+                  :disable="props.packingItems.length === 0"
                 />
+                <div class="row justify-end q-pa-none q-ma-none">
+                  <q-chip
+                    clickable
+                    color="primary"
+                    text-color="white"
+                    icon="add"
+                    label="add packing Item"
+                    size="xs"
+                    class="q-mt-sm"
+                    @click="goToPackingItemsPage"
+                  />
+                </div>
+
                 <q-input
                   v-model.number="localForm.budgetImpact.estimatedCost"
                   label="Estimated Cost"
@@ -153,6 +171,8 @@
 import { watch, ref } from 'vue';
 import TimePicker15Min from 'src/components/TimePicker.vue';
 import MapPicker from 'src/components/MapPicker.vue';
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
 // Props
 const props = defineProps({
@@ -180,6 +200,14 @@ const props = defineProps({
   isEdit: {
     type: Boolean,
     default: false,
+  },
+  packingItems: {
+    type: Array,
+    default: () => [],
+  },
+  tripId: {
+    type: String,
+    default: '',
   },
 });
 
@@ -266,6 +294,10 @@ function onReset() {
 function onLocationPicked(location: { lat: number; lng: number }) {
   localForm.value.coordinates = location;
   emit('location-picked', location);
+}
+
+async function goToPackingItemsPage() {
+  await router.push({ path: `/packing/${props.tripId}` });
 }
 </script>
 

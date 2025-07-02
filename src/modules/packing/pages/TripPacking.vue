@@ -31,6 +31,18 @@
             @update:model-value="getAll"
           />
         </div>
+        <div>
+          <q-btn
+            v-if="
+              packingStore.items.length &&
+              tripStore.activeTrip?.createdBy === authStore.profile!.uid
+            "
+            color="negative"
+            icon="delete"
+            label="Delete All"
+            @click="onClickDeleteAll"
+          />
+        </div>
       </div>
       <!-- Add mode -->
       <AddDialog
@@ -82,12 +94,14 @@ import type {
   PackingFetchOptions,
   PackingCategory,
   PackingType,
-  PackedStatus,
+  PackingResponse,
 } from '../store/types';
 import { Notify } from 'quasar';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
+import { useTripStore } from 'src/modules/trip/store';
 const packingStore = usePackingStore();
 const route = useRoute();
+const tripStore = useTripStore();
 const tripId = ref();
 const authStore = useAuthStore();
 const userId = ref();
@@ -161,7 +175,7 @@ async function handleAddItem(val: PackingItemCreate) {
   }
 }
 async function togglePacked(val: PackingItem) {
-  let response;
+  let response: PackingResponse = { success: false, message: 'No action taken' };
   if (val.type === 'personal') {
     response = await packingStore.togglePackedStatus(tripId.value, val.id, !val.isPacked);
   } else {
@@ -179,8 +193,8 @@ async function togglePacked(val: PackingItem) {
   }
   Notify.create({
     position: 'top',
-    message: response!.message,
-    color: response!.success ? 'info' : 'negative',
+    message: response.message,
+    color: response.success ? 'info' : 'negative',
     type: 'info',
   });
 }
@@ -259,6 +273,22 @@ async function addItemForUser(item: PackingItem) {
 
   if (response.success) {
     await getAll();
+  }
+}
+
+async function onClickDeleteAll() {
+  await tripStore.fetchTrip(tripId.value);
+  if (tripStore.activeTrip?.createdBy === authStore.profile!.uid) {
+    const response = await packingStore.deleteAllPackingItems(tripId.value);
+    Notify.create({
+      position: 'top',
+      message: response.message,
+      color: response.success ? 'info' : 'negative',
+      type: 'info',
+    });
+    if (response.success) {
+      await getAll();
+    }
   }
 }
 </script>

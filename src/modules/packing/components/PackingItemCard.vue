@@ -1,7 +1,14 @@
 <template>
   <div class="row q-col-gutter-md">
     <!-- Packed Items next -->
-    <div class="col-12 q-mt-lg"></div>
+    <div v-if="!items.length" class="full-width row items-baseline justify-center q-mt-xl">
+      <div>
+        <q-icon name="card_travel" size="lg" class="q-ma-md" />
+      </div>
+      <div>
+        <p class="text-xl font-bold">No packing items added yet.</p>
+      </div>
+    </div>
     <div v-for="item in items" :key="item.id" class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
       <!-- Outer flex container for card + buttons -->
       <div class="luggage-wrapper">
@@ -98,8 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { PackingItem } from '../store/types';
+import type { PackingItem } from '../store/types';
 
 const props = defineProps<{
   items: PackingItem[];
@@ -107,9 +113,9 @@ const props = defineProps<{
   uid: string;
 }>();
 
-const notPackedItems = computed(() => props.items.filter((item) => !item.isPacked));
+// const notPackedItems = computed(() => props.items.filter((item) => !item.isPacked));
 
-const packedItems = computed(() => props.items.filter((item) => item.isPacked));
+// const packedItems = computed(() => props.items.filter((item) => item.isPacked));
 
 const formatDueDate = (dueDate: string) => {
   return dueDate ? new Date(dueDate).toLocaleDateString() : 'No due date';

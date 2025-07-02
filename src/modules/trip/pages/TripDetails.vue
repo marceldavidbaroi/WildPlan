@@ -69,9 +69,15 @@
           no-caps
           dense
           size="md"
-          label="Itinarary"
-          @click="onItinararyClick"
-        />
+          icon="event_note"
+          @click="onItineraryClick"
+        >
+          <q-tooltip>View itinerary</q-tooltip>
+        </q-btn>
+
+        <q-btn color="info" flat no-caps dense size="md" icon="card_travel" @click="onPackingClick">
+          <q-tooltip>Manage packing list</q-tooltip>
+        </q-btn>
       </div>
       <q-separator />
 
@@ -554,8 +560,11 @@ function onShare() {
     });
 }
 
-async function onItinararyClick() {
+async function onItineraryClick() {
   await router.push({ path: `/itinerary/${id.value}` });
+}
+async function onPackingClick() {
+  await router.push({ path: `/packing/${id.value}` });
 }
 </script>
 

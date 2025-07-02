@@ -64,11 +64,13 @@
         <AddEventDialog
           :show="showAddDialog"
           :form="form"
+          :tripId="tripId ?? ''"
           :initial-location="initialLocation"
           :category-options="categoryOptions"
           :user-options="userOptions"
           :packing-item-options="packingItemOptions"
           :isEdit="isEdit"
+          :packingItems="packingItems"
           @update:show="(val) => (showAddDialog = val)"
           @submit="handleSubmit"
         />
@@ -152,11 +154,13 @@ import AddEventDialog from '../components/AddEventDialog.vue';
 import DeleteDialog from 'src/components/DeleteDialog.vue';
 import EventDetailsDialog from '../components/EventDetailsDialog.vue';
 import { Notify } from 'quasar';
+import { usePackingStore } from 'src/modules/packing/store';
 
 /* ───── Store Instances ───── */
 const itineraryStore = useItineraryStore();
 const tripStore = useTripStore();
 const authStore = useAuthStore();
+const packingStore = usePackingStore();
 const router = useRouter();
 
 /* ───── Refs and State ───── */
@@ -175,10 +179,39 @@ const selectedEventId = ref();
 const selectedEvent = ref();
 const btnLoading = ref<boolean>(false);
 const loading = ref<boolean>(false);
+const packingItems = ref();
 
 const userOptions = ref();
 const categoryOptions = Object.values(ItineraryEventCategory);
-const packingItemOptions = ['Passport', 'Camera', 'Sunscreen', 'Snacks'];
+const packingItemOptions = [
+  'none',
+  'Passport',
+  'Camera',
+  'Sunscreen',
+  'Snacks',
+  'Travel Adapter',
+  'Phone Charger',
+  'Headphones',
+  'Travel Pillow',
+  'Toothbrush',
+  'Toothpaste',
+  'Medications',
+  'First Aid Kit',
+  'Reusable Water Bottle',
+  'Travel Documents',
+  'Credit Card',
+  'Cash',
+  'Guidebook',
+  'Sunglasses',
+  'Hat',
+  'Rain Jacket',
+  'Comfortable Shoes',
+  'Swimsuit',
+  'Clothing',
+  'Hand Sanitizer',
+  'Wet Wipes',
+  'Luggage Lock',
+];
 
 /* ───── Form Data ───── */
 const form = ref<ItineraryEvent>({
@@ -214,13 +247,23 @@ onMounted(async () => {
   const res = await itineraryStore.getDay(tripId.value, itineraryDay.value);
   console.log(res);
   await tripStore.fetchTrip(tripId.value);
+  await authStore.fetchAllUser();
 
   initialLocation.value = tripStore.activeTrip?.location;
 
   const involvedUsersId = tripStore.activeTrip?.involvedUsers || [];
+
   const allUsers = authStore.allUsers || [];
+  console.log('this are the involved users', involvedUsersId);
   userOptions.value = allUsers.filter((user) => involvedUsersId.includes(user.uid));
+  console.log('all users', allUsers);
+  console.log('this are the option for the user ', userOptions.value);
   date.value = extractDateParts(itineraryStore.selectedDay!.id);
+  await packingStore.getPackingItems({ tripId: tripId.value });
+  packingItems.value = packingStore.items.filter((item) => item.type === 'shared');
+
+  console.log('packing items', packingStore.items);
+
   loading.value = false;
 });
 
