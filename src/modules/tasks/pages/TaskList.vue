@@ -1,10 +1,11 @@
 <template>
   <q-page padding>
-    {{ taskStore.tasks }}
     <q-btn label="Add Task" color="primary" icon="add" @click="showDialog = true" />
     <AddDialog v-model="showDialog" @save="handleSave" />
 
-    <TaskMediaManager :tasks="taskStore.tasks" :users="users" :trip-id="tripId" />
+    <div class="q-mt-xl">
+      <TaskMediaManager :tasks="taskStore.tasks" :users="users" :trip-id="tripId" />
+    </div>
   </q-page>
 </template>
 

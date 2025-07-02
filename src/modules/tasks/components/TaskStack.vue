@@ -1,9 +1,9 @@
 <template>
-  <div class="" style="border: 1px solid blue">
-    <div v-for="(task, index) in tasks" :key="task.id" style="">
+  <div class="my-card" style="width: 300px">
+    <div v-for="(task, index) in tasks" :key="task.id">
       <div class="row">
         <q-card
-          class="my-card col-12 col-sm-3 col-md-4 shadow-4"
+          class="shadow-4 my-card"
           :class="{ expanded: expandedCard === index }"
           style="border-radius: 12px 12px 0 0"
           @click="toggleExpand(index)"
@@ -26,11 +26,18 @@
               </div>
             </div>
             <div class="row justify-between">
-              <div>{{ task.title }}</div>
+              <div>
+                <q-badge :class="getPriorityColor(task.priority)" label="" />
+                <span class="text-body1 text-bold q-px-sm">{{ task.title }}</span>
+              </div>
               <div>{{ task.dueDate }}</div>
             </div>
             <div v-if="expandedCard === index" class="full-content" @click.stop>
-              <div v-if="showAssignUser" class="shadow-4 q-pa-sm" style="border-radius: 12px">
+              <div
+                v-if="showAssignUser"
+                class="shadow-4 q-pa-sm q-mb-md"
+                style="border-radius: 12px"
+              >
                 <q-icon name="person" /> Assign user
                 <q-select
                   v-model="task.assignedTo"
@@ -106,13 +113,14 @@
       </div>
     </div>
     <div class="row">
-      <q-card
-        class="my-card col-12 col-sm-3 col-md-4 shadow-4"
-        style="border-radius: 12px 12px 0 0; height: 150px"
-      >
+      <q-card class="my-card shadow-4" style="border-radius: 12px 12px 0 0; height: 150px">
         <q-card-section>
-          <div class="flex flex-center text-bold text-h4" :class="getStatusColor(props.status)">
-            test
+          <div
+            class="flex flex-center text-bold text-h4"
+            style="border-radius: 12px; height: 100px"
+            :class="getStatusColor(props.status)"
+          >
+            {{ props.status }}
           </div>
         </q-card-section>
       </q-card>
@@ -131,7 +139,7 @@ const props = defineProps<{
   tasks: Task[];
   users: any;
   tripId: string;
-  status: TaskStatus;
+  status: TaskStatus | any;
 }>();
 
 const emit = defineEmits<{
@@ -255,6 +263,7 @@ async function onDelete(task: Task) {
     transform 0.2s ease,
     box-shadow 0.2s ease;
   cursor: pointer;
+  min-width: 300px;
 }
 
 .my-card:hover {

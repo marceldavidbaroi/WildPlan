@@ -1,9 +1,18 @@
 <template>
-  <div class="">
-    <!-- pending -->
-    <div class="" style="border: 1px solid red">
+  <div class="row q-gutter-md">
+    <!-- unassigned task -->
+    <div v-if="unAssignedTask.length" class="">
       <TaskStack
-        v-if="pendingTasks.length"
+        status="Unassigned"
+        :tasks="unAssignedTask ?? []"
+        :users="users"
+        :tripId="tripId"
+        @update="emit('update')"
+      />
+    </div>
+    <!-- pending -->
+    <div v-if="pendingTasks.length" class="">
+      <TaskStack
         status="pending"
         :tasks="pendingTasks ?? []"
         :users="users"
@@ -12,32 +21,35 @@
       />
     </div>
     <!-- in progress -->
-    <TaskStack
-      v-if="inProgressTasks.length"
-      status="inProgress"
-      :tasks="inProgressTasks ?? []"
-      :users="users"
-      :tripId="tripId"
-      @update="emit('update')"
-    />
+    <div v-if="inProgressTasks.length" class="">
+      <TaskStack
+        status="inProgress"
+        :tasks="inProgressTasks ?? []"
+        :users="users"
+        :tripId="tripId"
+        @update="emit('update')"
+      />
+    </div>
     <!-- completed -->
-    <TaskStack
-      v-if="completedTasks.length"
-      status="completed"
-      :tasks="completedTasks ?? []"
-      :users="users"
-      :tripId="tripId"
-      @update="emit('update')"
-    />
+    <div v-if="completedTasks.length" class="">
+      <TaskStack
+        status="completed"
+        :tasks="completedTasks ?? []"
+        :users="users"
+        :tripId="tripId"
+        @update="emit('update')"
+      />
+    </div>
     <!-- cancelled -->
-    <TaskStack
-      v-if="cancelledTasks.length"
-      status="cancelled"
-      :tasks="cancelledTasks ?? []"
-      :users="users"
-      :tripId="tripId"
-      @update="emit('update')"
-    />
+    <div v-if="cancelledTasks.length" class="">
+      <TaskStack
+        status="cancelled"
+        :tasks="cancelledTasks ?? []"
+        :users="users"
+        :tripId="tripId"
+        @update="emit('update')"
+      />
+    </div>
   </div>
 </template>
 
@@ -55,15 +67,23 @@ const emit = defineEmits<{
   (e: 'update'): void;
 }>();
 
+const assignedTask = computed(() => props.tasks.filter((task) => task.assignedTo.length !== 0));
+const unAssignedTask = computed(() => props.tasks.filter((task) => task.assignedTo.length === 0));
 // Grouped computed arrays
-const pendingTasks = computed(() => props.tasks.filter((task) => task.status === 'pending'));
+const pendingTasks = computed(() => assignedTask.value.filter((task) => task.status === 'pending'));
 
-const inProgressTasks = computed(() => props.tasks.filter((task) => task.status === 'inProgress'));
+const inProgressTasks = computed(() =>
+  assignedTask.value.filter((task) => task.status === 'inProgress'),
+);
 
-const completedTasks = computed(() => props.tasks.filter((task) => task.status === 'completed'));
+const completedTasks = computed(() =>
+  assignedTask.value.filter((task) => task.status === 'completed'),
+);
 
 // If you want cancelled too:
-const cancelledTasks = computed(() => props.tasks.filter((task) => task.status === 'cancelled'));
+const cancelledTasks = computed(() =>
+  assignedTask.value.filter((task) => task.status === 'cancelled'),
+);
 </script>
 
 <style scoped></style>
