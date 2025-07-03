@@ -21,6 +21,7 @@
                   <q-tooltip class="bg-info text-black">Assign User </q-tooltip>
                 </q-btn>
                 <q-btn
+                  v-if="task.ownerId === authStore.profile!.uid"
                   flat
                   dense
                   icon="edit"
@@ -33,6 +34,7 @@
                 <AddDialog v-model="showDialog" :is-edit="true" :task="task" @save="handleUpdate" />
 
                 <q-btn
+                  v-if="task.ownerId === authStore.profile!.uid"
                   flat
                   dense
                   icon="delete"
@@ -157,6 +159,9 @@ import type { Task, TaskStatus, TaskPriority } from '../store/types';
 import { useTaskStore } from '../store';
 import { Notify } from 'quasar';
 import AddDialog from './AddTask.vue';
+import { useAuthStore } from 'src/modules/auth/store';
+
+const authStore = useAuthStore();
 
 const taskStore = useTaskStore();
 

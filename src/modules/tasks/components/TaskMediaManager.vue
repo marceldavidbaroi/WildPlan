@@ -100,10 +100,21 @@
         @update="emit('update')"
       />
     </div>
+    <div
+      v-if="!unAssignedTask.length && !assignedTaskByMe.length"
+      class="full-width flex flex-center"
+    >
+      <q-card flat class="q-pa-md no-tasks-card">
+        <q-card-section class="row items-center justify-center q-gutter-sm">
+          <q-icon name="hourglass_empty" size="32px" color="grey-6" />
+          <div class="text-body2 text-grey-7">No tasks available</div>
+        </q-card-section>
+      </q-card>
+    </div>
   </div>
 
   <div v-if="selected === 'all'">
-    <TaskTableView :tasks="tasks" :tripId="tripId" />
+    <TaskTableView :tasks="tasks" :tripId="tripId" :users="users" />
   </div>
 </template>
 

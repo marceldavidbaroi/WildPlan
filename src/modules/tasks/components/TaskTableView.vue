@@ -171,7 +171,33 @@
           <div><strong>Description:</strong> {{ selectedTask?.description || 'N/A' }}</div>
           <div class="q-mt-md"><strong>Due Date:</strong> {{ selectedTask?.dueDate }}</div>
           <div class="q-mt-md">
-            <strong>Assigned To:</strong>
+            <strong class="row justify-between"
+              >Assigned To:
+              <q-btn
+                flat
+                dense
+                size="sm"
+                icon="person_add"
+                color="info"
+                @click="showAssignUser = !showAssignUser"
+            /></strong>
+            <div v-if="showAssignUser" class="" style="border-radius: 12px">
+              <q-icon name="person" /> Assign user
+              <q-select
+                v-model="selectedTaskMemberList"
+                :options="props.users"
+                label="Standard"
+                filled
+                use-chips
+                dense
+                map-options
+                emit-value
+                option-label="email"
+                multiple
+                class="q-mt-sm"
+                @update:model-value="onMemberAdd(selectedTask!, selectedTaskMemberList)"
+              />
+            </div>
             <div v-if="selectedTask?.assignedTo?.length">
               <q-avatar
                 v-for="user in selectedTask.assignedTo"
@@ -190,7 +216,7 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Close" color="primary" v-close-popup />
+          <q-btn flat label="Close" color="" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -198,16 +224,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Task, TaskStatus, TaskPriority } from '../store/types';
 import { useTaskStore } from '../store';
 import { Notify } from 'quasar';
 
 const taskStore = useTaskStore();
+const showAssignUser = ref<boolean>(false);
 
 const props = defineProps<{
   tasks: Task[];
   tripId: string;
+  users: any;
 }>();
 
 const statusOptions: TaskStatus[] = ['pending', 'inProgress', 'completed', 'cancelled'];
@@ -221,6 +249,11 @@ const tasksByPriority = computed(() => ({
 
 const showDialog = ref(false);
 const selectedTask = ref<Task | null>(null);
+const selectedTaskMemberList = ref<any[]>([]);
+
+watch(selectedTask, (task) => {
+  selectedTaskMemberList.value = task?.assignedTo || [];
+});
 
 function openTask(task: Task) {
   selectedTask.value = task;
@@ -333,6 +366,14 @@ function calculateDueDateStatus(dueDateStr: string) {
     status,
     statusColor,
   };
+}
+
+async function onMemberAdd(task: Task, selectedTaskMemberList: any) {
+  task.assignedTo = selectedTaskMemberList ?? [];
+  showAssignUser.value = false;
+  console.log(task);
+
+  await updateTask(task);
 }
 </script>
 
