@@ -4,7 +4,13 @@
     <AddDialog v-model="showDialog" @save="handleSave" />
 
     <div class="q-mt-xl">
-      <TaskMediaManager :tasks="taskStore.tasks" :users="users" :trip-id="tripId" />
+      <TaskMediaManager
+        :tasks="taskStore.tasks"
+        :users="users"
+        :trip-id="tripId"
+        :uid="authStore.profile!.uid"
+        @update="handleUpdate"
+      />
     </div>
   </q-page>
 </template>
@@ -37,7 +43,7 @@ onMounted(async () => {
   await tripStore.fetchTrip(tripId.value);
 
   users.value = authStore.allUsers?.filter((user) =>
-    tripStore.activeTrip?.members.includes(user.uid),
+    tripStore.activeTrip?.involvedUsers.includes(user.uid),
   );
 });
 
@@ -59,6 +65,9 @@ async function handleSave(task: Task) {
   });
   console.log('Saved Task:', task);
   // Add your save logic here
+}
+async function handleUpdate() {
+  await getAll();
 }
 </script>
 

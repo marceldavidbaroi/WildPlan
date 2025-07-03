@@ -41,21 +41,19 @@
             />
           </q-popup-proxy>
         </q-input>
-        <q-select
+        <!-- <q-select
           v-model="form.priority"
           label="Priority"
           :options="['Low', 'Medium', 'High']"
           filled
           dense
           class="q-mt-md"
-        />
+        /> -->
       </q-card-section>
 
       <q-card-actions align="right">
         <q-btn label="Cancel" flat color="grey" @click="close" />
-        <q-btn label="Save" color="primary" @click="save" :disable="!form.title">
-          <q-icon name="check" class="q-ml-xs" />
-        </q-btn>
+        <q-btn label="Save" color="primary" @click="save" :disable="!form.title" />
       </q-card-actions>
     </q-card>
   </q-dialog>

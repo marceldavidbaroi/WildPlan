@@ -1,6 +1,7 @@
 // src/types/task-types.ts
 
 import type { Timestamp } from 'firebase/firestore';
+import type { UserProfile } from 'src/modules/auth/store/types';
 
 /**
  * ✅ Task priority levels
@@ -19,7 +20,7 @@ export interface TaskCreate {
   tripId: string;
   title: string;
   description?: string;
-  assignedTo?: string[]; // Array of user UIDs
+  assignedTo?: UserProfile[]; // Array of user UIDs
   dueDate?: string; // ISO date
   priority?: TaskPriority;
   ownerId: string; // ✅ New: ID of the user who created the task
@@ -32,7 +33,7 @@ export interface TaskDoc {
   tripId: string;
   title: string;
   description?: string;
-  assignedTo: string[];
+  assignedTo: UserProfile[];
   dueDate?: string;
   priority: TaskPriority;
   status: TaskStatus;
@@ -49,7 +50,7 @@ export interface Task {
   tripId: string;
   title: string;
   description?: string;
-  assignedTo: string[];
+  assignedTo: UserProfile[];
   dueDate?: string;
   priority: TaskPriority;
   status: TaskStatus;
@@ -74,7 +75,7 @@ export interface TaskResponse<T = unknown> {
  */
 export interface TaskFetchOptions {
   tripId: string;
-  assignedTo?: string; // Filter tasks assigned to specific user
+  assignedTo?: UserProfile; // Filter tasks assigned to specific user
   status?: TaskStatus | null; // Filter by status
   priority?: TaskPriority | null; // Filter by priority
 }

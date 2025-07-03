@@ -17,9 +17,31 @@
                   icon="person"
                   size="sm"
                   @click.stop="showAssignUser = !showAssignUser"
-                />
-                <q-btn flat dense icon="edit" size="sm" @click.stop="onEdit(index)" />
-                <q-btn flat dense icon="delete" size="sm" @click.stop="onDelete(task)" />
+                >
+                  <q-tooltip class="bg-info text-black">Assign User </q-tooltip>
+                </q-btn>
+                <q-btn
+                  flat
+                  dense
+                  icon="edit"
+                  size="sm"
+                  color="info"
+                  @click.stop="showDialog = true"
+                >
+                  <q-tooltip class="bg-info text-black"> Edit Task </q-tooltip>
+                </q-btn>
+                <AddDialog v-model="showDialog" :is-edit="true" :task="task" @save="handleUpdate" />
+
+                <q-btn
+                  flat
+                  dense
+                  icon="delete"
+                  color="negative"
+                  size="sm"
+                  @click.stop="onDelete(task)"
+                >
+                  <q-tooltip class="bg-info text-black"> Delete Task </q-tooltip>
+                </q-btn>
               </div>
               <div>
                 <q-btn flat dense icon="close" size="sm" @click.stop="toggleExpand(index)" />
@@ -30,9 +52,19 @@
                 <q-badge :class="getPriorityColor(task.priority)" label="" />
                 <span class="text-body1 text-bold q-px-sm">{{ task.title }}</span>
               </div>
-              <div>{{ task.dueDate }}</div>
+              <div :class="calculateDueDateStatus(task.dueDate ?? '').statusColor">
+                {{ calculateDueDateStatus(task.dueDate ?? '').status }}
+              </div>
             </div>
+
+            <!-- card expand -->
             <div v-if="expandedCard === index" class="full-content" @click.stop>
+              <div v-if="task.assignedTo.length" class="row items-center q-gutter-sm q-my-sm">
+                <q-avatar v-for="user in task.assignedTo" :key="user.email!" size="sm">
+                  <q-img :src="user?.photoURL || ''" spinner-color="primary" spinner-size="20px" />
+                  <q-tooltip>{{ user.displayName }}</q-tooltip>
+                </q-avatar>
+              </div>
               <div
                 v-if="showAssignUser"
                 class="shadow-4 q-pa-sm q-mb-md"
@@ -51,17 +83,8 @@
                   option-label="email"
                   multiple
                   class="q-mt-sm"
+                  @update:model-value="onMemberAdd(task)"
                 />
-                <div class="row justify-end">
-                  <q-btn
-                    color="primary"
-                    dense
-                    size="sm"
-                    label="save"
-                    class="q-mt-md"
-                    @click="onMemberAdd(task)"
-                  />
-                </div>
               </div>
               <q-btn-dropdown
                 :label="task.status ? formatStatus(task.status) : 'Select status'"
@@ -133,6 +156,8 @@ import { ref } from 'vue';
 import type { Task, TaskStatus, TaskPriority } from '../store/types';
 import { useTaskStore } from '../store';
 import { Notify } from 'quasar';
+import AddDialog from './AddTask.vue';
+
 const taskStore = useTaskStore();
 
 const props = defineProps<{
@@ -151,7 +176,7 @@ const priorityOptions: TaskPriority[] = ['low', 'medium', 'high'];
 
 const expandedCard = ref<number | null>(null);
 const showAssignUser = ref<boolean>(false);
-const assignedUsers = ref([]);
+const showDialog = ref<boolean>(false);
 
 function toggleExpand(index: number) {
   expandedCard.value = expandedCard.value === index ? null : index;
@@ -255,6 +280,45 @@ async function onDelete(task: Task) {
     type: 'info',
   });
 }
+async function handleUpdate(task: Task) {
+  console.log(task);
+  showDialog.value = false;
+  await updateTask(task);
+}
+
+function calculateDueDateStatus(dueDateStr: string) {
+  // Parse the due date
+  const dueDate = new Date(dueDateStr);
+
+  // Today's date, normalized to midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Calculate the difference in days
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const delta = Math.floor((dueDate.getTime() - today.getTime()) / msPerDay);
+
+  let status = '';
+  let statusColor = '';
+
+  if (delta > 0) {
+    status = `${delta} day(s) left until due.`;
+    statusColor = 'info';
+  } else if (delta === 0) {
+    status = 'Due today!';
+    statusColor = 'text-info';
+  } else {
+    status = `Overdue by ${Math.abs(delta)} day(s).`;
+    statusColor = 'text-negative';
+  }
+
+  return {
+    dueDate: dueDate.toISOString().split('T')[0],
+    today: today.toISOString().split('T')[0],
+    status,
+    statusColor,
+  };
+}
 </script>
 
 <style scoped>
@@ -282,95 +346,95 @@ async function onDelete(task: Task) {
 
 /* Light Mode (default) */
 .status-soft-pending {
-  background-color: #f0f4f8;
-  color: #607d8b;
+  background-color: #607d8b; /* was color */
+  color: #f0f4f8; /* was background */
 }
 
 .status-soft-in-progress {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: #1976d2;
+  color: #e3f2fd;
 }
 
 .status-soft-completed {
-  background-color: #e8f5e9;
-  color: #388e3c;
+  background-color: #388e3c;
+  color: #e8f5e9;
 }
 
 .status-soft-cancelled {
-  background-color: #ffebee;
-  color: #d32f2f;
+  background-color: #d32f2f;
+  color: #ffebee;
 }
 
 .status-soft-default {
-  background-color: #eceff1;
-  color: #455a64;
+  background-color: #455a64;
+  color: #eceff1;
 }
 
 /* Dark Mode */
 body.body--dark .status-soft-pending {
-  background-color: #37474f;
-  color: #cfd8dc;
+  background-color: #cfd8dc;
+  color: #37474f;
 }
 
 body.body--dark .status-soft-in-progress {
-  background-color: #263238;
-  color: #90caf9;
+  background-color: #90caf9;
+  color: #263238;
 }
 
 body.body--dark .status-soft-completed {
-  background-color: #1b5e20;
-  color: #c8e6c9;
+  background-color: #c8e6c9;
+  color: #1b5e20;
 }
 
 body.body--dark .status-soft-cancelled {
-  background-color: #b71c1c;
-  color: #ffcdd2;
+  background-color: #ffcdd2;
+  color: #b71c1c;
 }
 
 body.body--dark .status-soft-default {
-  background-color: #455a64;
-  color: #cfd8dc;
+  background-color: #cfd8dc;
+  color: #455a64;
 }
 
 /* Light Mode */
 .priority-soft-low {
-  background-color: #e8f5e9; /* soft green */
-  color: #2e7d32;
+  background-color: #2e7d32; /* swapped */
+  color: #e8f5e9;
 }
 
 .priority-soft-medium {
-  background-color: #fff8e1; /* soft yellow */
-  color: #f9a825;
+  background-color: #f9a825; /* swapped */
+  color: #fff8e1;
 }
 
 .priority-soft-high {
-  background-color: #ffebee; /* soft red */
-  color: #c62828;
+  background-color: #c62828; /* swapped */
+  color: #ffebee;
 }
 
 .priority-soft-default {
-  background-color: #eceff1;
-  color: #455a64;
+  background-color: #455a64; /* swapped */
+  color: #eceff1;
 }
 
 /* Dark Mode */
 body.body--dark .priority-soft-low {
-  background-color: #1b5e20;
-  color: #c8e6c9;
+  background-color: #c8e6c9; /* swapped */
+  color: #1b5e20;
 }
 
 body.body--dark .priority-soft-medium {
-  background-color: #f57f17;
-  color: #fffde7;
+  background-color: #fffde7; /* swapped */
+  color: #f57f17;
 }
 
 body.body--dark .priority-soft-high {
-  background-color: #b71c1c;
-  color: #ffcdd2;
+  background-color: #ffcdd2; /* swapped */
+  color: #b71c1c;
 }
 
 body.body--dark .priority-soft-default {
-  background-color: #455a64;
-  color: #cfd8dc;
+  background-color: #cfd8dc; /* swapped */
+  color: #455a64;
 }
 </style>
