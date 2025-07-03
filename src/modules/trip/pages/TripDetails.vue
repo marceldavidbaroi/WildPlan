@@ -63,6 +63,9 @@
     <!-- Details Section -->
     <div class="trip-details q-pa-md">
       <div class="flex flex-center">
+        <q-btn color="info" flat no-caps dense size="md" icon="task" @click="onTaskClick">
+          <q-tooltip>Add Task for Trip</q-tooltip>
+        </q-btn>
         <q-btn
           color="info"
           flat
@@ -565,6 +568,9 @@ async function onItineraryClick() {
 }
 async function onPackingClick() {
   await router.push({ path: `/packing/${id.value}` });
+}
+async function onTaskClick() {
+  await router.push({ path: `/tasks/${id.value}` });
 }
 </script>
 
