@@ -147,6 +147,7 @@ export async function createDay(
       date,
       events: [],
       dailyNotes: '',
+      inputSource: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -204,10 +205,10 @@ export async function addEvent(
 }
 
 // 📝 Update daily notes
-export async function updateNotes(
+export async function updateDayField(
   tripId: string,
   date: string,
-  notes: string,
+  updates: Partial<Pick<TripDayItinerary, 'dailyNotes' | 'inputSource'>>,
 ): Promise<ServiceResponse<void>> {
   try {
     const dayRef = getDayDocRef(tripId, date);
@@ -215,7 +216,7 @@ export async function updateNotes(
 
     if (snap.exists()) {
       await updateDoc(dayRef, {
-        dailyNotes: notes,
+        ...updates,
         updatedAt: serverTimestamp(),
       });
     } else {
@@ -223,16 +224,17 @@ export async function updateNotes(
         tripId,
         date,
         events: [],
-        dailyNotes: notes,
+        inputSource: updates.inputSource ?? null,
+        dailyNotes: updates.dailyNotes ?? '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
       await setDoc(dayRef, newDay);
     }
 
-    return { success: true, message: 'Daily notes updated.' };
+    return { success: true, message: 'Day field(s) updated.' };
   } catch (error) {
-    return handleError<void>('updateNotes', error);
+    return handleError<void>('updateDayField', error);
   }
 }
 

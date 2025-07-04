@@ -198,21 +198,26 @@ export async function removeEventById(
 /**
  * 📝 Update the daily notes for a specific itinerary day
  */
-export async function updateNotes(
+export async function updateDayField(
   this: ItineraryStoreState,
   tripId: string,
   date: string,
-  notes: string,
+  updates: Partial<Pick<TripDayItinerary, 'dailyNotes' | 'inputSource'>>,
 ): Promise<ServiceResponse<void>> {
   this.isLoading = true;
   this.error = null;
 
-  const response = await ItineraryService.updateNotes(tripId, date, notes);
+  const response = await ItineraryService.updateDayField(tripId, date, updates);
 
   if (response.success) {
     const index = this.itineraryDays.findIndex((day) => day.date === date);
     if (index !== -1) {
-      this.itineraryDays[index]!.dailyNotes = notes;
+      if (updates.dailyNotes !== undefined) {
+        this.itineraryDays[index]!.dailyNotes = updates.dailyNotes;
+      }
+      if (updates.inputSource !== undefined) {
+        this.itineraryDays[index]!.inputSource = updates.inputSource;
+      }
     }
   } else {
     this.error = response.message;

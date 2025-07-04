@@ -37,6 +37,7 @@ export interface TripDayItinerary {
   dailyNotes?: string;
   createdAt: number | FieldValue;
   updatedAt: number | FieldValue;
+  inputSource: 'scheduler' | 'manual' | null;
 }
 
 /**

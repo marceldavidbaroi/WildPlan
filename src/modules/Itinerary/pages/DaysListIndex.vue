@@ -48,9 +48,22 @@
         <div class="full-width row justify-end q-gutter-sm">
           <q-btn color="info" no-caps flat label="Preview" @click="onPreview" />
           <div v-if="isAdmin" class="q-gutter-sm">
-            <q-btn color="negative" no-caps label="Delete All" @click="onDeleteAll" />
-            <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
             <q-btn
+              v-if="itineraryStore.selectedDay?.inputSource !== null"
+              color="negative"
+              no-caps
+              label="Delete All"
+              @click="onDeleteAll"
+            />
+            <q-btn
+              v-if="itineraryStore.selectedDay?.inputSource === 'scheduler'"
+              color="primary"
+              no-caps
+              label="Make Schedule"
+              @click="onScheduleClick"
+            />
+            <q-btn
+              v-if="itineraryStore.selectedDay?.inputSource === 'manual'"
               color="primary"
               no-caps
               label="Add Event"
@@ -79,7 +92,37 @@
       </div>
 
       <div>
-        <div v-if="itineraryStore.selectedDay?.events.length === 0">No Events</div>
+        <div
+          v-if="itineraryStore.selectedDay?.events.length === 0"
+          class="q-pa-md flex flex-center"
+        >
+          <q-card class="q-pa-lg q-mx-auto" style="max-width: 400px">
+            <q-card-section class="text-center">
+              <q-icon name="event_busy" size="48px" color="grey-6" />
+              <div class="text-h6 q-mt-md">No Events Scheduled</div>
+              <div class="text-subtitle2 q-mt-xs">Start by choosing how to plan your day.</div>
+            </q-card-section>
+
+            <q-separator v-if="itineraryStore.selectedDay?.inputSource === null" spaced />
+
+            <q-card-section v-if="itineraryStore.selectedDay?.inputSource === null">
+              <q-btn
+                color="primary"
+                icon="edit"
+                label="Add Event Individually"
+                class="full-width q-mb-sm"
+                @click="onClickIndividualorSchedule({ inputSource: 'manual' })"
+              />
+              <q-btn
+                color="secondary"
+                icon="event"
+                label="Use Scheduler"
+                class="full-width"
+                @click="onClickIndividualorSchedule({ inputSource: 'scheduler' })"
+              />
+            </q-card-section>
+          </q-card>
+        </div>
         <div v-else>
           <div v-for="event in itineraryStore.selectedDay?.events" :key="event.id">
             <div class="shadow-1 q-my-sm q-pa-md" style="border-radius: 12px">
@@ -362,6 +405,9 @@ async function handleConfirmAll() {
 
   if (response?.success) {
     await itineraryStore.getDay(tripId.value!, itineraryDay.value!);
+    await itineraryStore.updateDayField(tripId.value!, itineraryStore.selectedDay!.id, {
+      inputSource: null,
+    });
   }
   Notify.create({
     position: 'top',
@@ -425,6 +471,21 @@ const onPreview = () => {
     },
   }).href;
   window.open(url, '_blank');
+};
+
+const onClickIndividualorSchedule = async (val: object) => {
+  console.log(val);
+  const response = await itineraryStore.updateDayField(
+    tripId.value!,
+    itineraryStore.selectedDay!.id,
+    val,
+  );
+  Notify.create({
+    position: 'top',
+    message: response.message,
+    type: 'info',
+    color: response.success ? 'info' : 'negative',
+  });
 };
 </script>
 
