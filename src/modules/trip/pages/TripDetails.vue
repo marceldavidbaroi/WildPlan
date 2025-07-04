@@ -62,9 +62,9 @@
 
     <!-- Details Section -->
     <div class="trip-details q-pa-md">
-      <div class="flex flex-center">
+      <div class="flex flex-center shadow-4 q-gutter-sm" style="border-radius: 12px">
         <q-btn color="info" flat no-caps dense size="md" icon="task" @click="onTaskClick">
-          <q-tooltip>Add Task for Trip</q-tooltip>
+          <q-tooltip class="bg-info text-black">Add Task for Trip</q-tooltip>
         </q-btn>
         <q-btn
           color="info"
@@ -75,14 +75,43 @@
           icon="event_note"
           @click="onItineraryClick"
         >
-          <q-tooltip>View itinerary</q-tooltip>
+          <q-tooltip class="bg-info text-black">View itinerary</q-tooltip>
         </q-btn>
 
         <q-btn color="info" flat no-caps dense size="md" icon="card_travel" @click="onPackingClick">
-          <q-tooltip>Manage packing list</q-tooltip>
+          <q-tooltip class="bg-info text-black">Manage packing list</q-tooltip>
+        </q-btn>
+
+        <q-btn
+          flat
+          dense
+          :icon="trip?.archived ? 'folder_zip' : 'folder_open'"
+          color="white"
+          @click="onArchive()"
+        >
+          <q-tooltip class="bg-info text-black">
+            {{ trip?.archived ? 'Archieved' : 'Not archieved' }}</q-tooltip
+          >
+        </q-btn>
+        <q-btn
+          flat
+          dense
+          :icon="trip?.isPublic ? 'public' : 'lock_person'"
+          color="white"
+          @click="onVisibilityChange"
+        >
+          <q-tooltip class="bg-info text-black">
+            {{ trip?.isPublic ? 'Public trip' : 'Private trip' }}
+          </q-tooltip>
+        </q-btn>
+
+        <q-btn flat dense icon="settings" color="white" @click="openSettings()">
+          <q-tooltip class="bg-info text-black"> Settings </q-tooltip>
+        </q-btn>
+        <q-btn flat dense icon="share" color="white" @click="onShare">
+          <q-tooltip class="bg-info text-black"> Share join link </q-tooltip>
         </q-btn>
       </div>
-      <q-separator />
 
       <div class="row q-mt-md">
         <!-- Dates & Status -->
