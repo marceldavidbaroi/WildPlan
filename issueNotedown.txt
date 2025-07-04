@@ -2,7 +2,6 @@
 
 main branch 
 #itinerary issues
-add a search to the add itinerary assign to dropdown 
 when add event is used disable the make schedule and vice versa
 there is a massive issue with the schedular the time is not right -critical
 add a loading statre for the preview of the itinerary

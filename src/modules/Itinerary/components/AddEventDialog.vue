@@ -16,7 +16,7 @@
         <q-form @submit.prevent="onSubmit" @reset.prevent="onReset" ref="formRef">
           <div class="row q-col-gutter-md">
             <!-- Column 1 -->
-            <div class="col-12 col-md-6 col-lg-4">
+            <div class="col-12 col-md-6">
               <div class="q-gutter-sm">
                 <q-input
                   v-model="localForm.name"
@@ -44,7 +44,7 @@
               </div>
             </div>
             <!-- Column 2 -->
-            <div class="col-12 col-md-6 col-lg-4">
+            <div class="col-12 col-md-6">
               <div class="q-gutter-sm">
                 <q-input
                   v-model="localForm.locationName"
@@ -68,7 +68,7 @@
               </div>
             </div>
             <!-- Column 3 -->
-            <div class="col-12 col-md-12 col-lg-4">
+            <div class="col-12 col-md-12">
               <div class="q-gutter-sm">
                 <q-select
                   v-model="localForm.category"
@@ -84,7 +84,7 @@
                 />
                 <q-select
                   v-model="localForm.assignedTo"
-                  :options="userOptions"
+                  :options="filteredUserOptions"
                   label="Assigned To"
                   multiple
                   use-chips
@@ -96,6 +96,9 @@
                   dense
                   square
                   clearable
+                  use-input
+                  input-debounce="300"
+                  @filter="filterUsers"
                 />
                 <q-select
                   v-model="localForm.packingItemsNeeded"
@@ -298,6 +301,23 @@ function onLocationPicked(location: { lat: number; lng: number }) {
 
 async function goToPackingItemsPage() {
   await router.push({ path: `/packing/${props.tripId}` });
+}
+const filteredUserOptions = ref([...props.userOptions]);
+
+function filterUsers(val: string, update: (callback: () => void) => void) {
+  if (val === '') {
+    update(() => {
+      filteredUserOptions.value = props.userOptions;
+    });
+    return;
+  }
+
+  const needle = val.toLowerCase();
+  update(() => {
+    filteredUserOptions.value = props.userOptions.filter((user) =>
+      user.displayName.toLowerCase().includes(needle),
+    );
+  });
 }
 </script>
 
