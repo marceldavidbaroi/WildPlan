@@ -6,14 +6,15 @@
         <div class="banner-overlay column justify-end">
           <div class="row justify-between items-center q-px-md q-pt-md">
             <div class="text-h5 text-bold text-white">{{ trip?.name }}</div>
-            <div v-if="isEditor" class="row">
+            <div v-if="isEditor" class="row items-center">
               <q-btn-dropdown
                 color="white"
                 :label="selectedStatusLabel"
                 text-color="primary"
-                class="q-py-none"
+                class="q-pa-xs text-bold"
                 size="sm"
                 dense
+                style="height: fit-content"
               >
                 <q-list>
                   <q-item

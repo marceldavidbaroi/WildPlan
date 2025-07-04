@@ -59,7 +59,7 @@
       </div>
       <div>
         <q-banner
-          v-if="itineraryStore.itineraryDays.length === 0 || loadMoreDays"
+          v-if="(itineraryStore.itineraryDays.length === 0 || loadMoreDays) && isAdmin"
           class="bg-info text-white q-pa-md rounded-borders shadow-2"
           style="border-left: 5px solid #ffffffaa"
         >
@@ -80,6 +80,7 @@
                 text-color="primary"
                 unelevated
                 label="Add Days"
+                :loading="dummyLoadingBtn"
                 @click="addDummyDays"
               />
             </div>
@@ -136,6 +137,9 @@ import { Notify } from 'quasar';
 // import AddDialog from '../components/AddDialog.vue';
 import { useTripStore } from 'src/modules/trip/store';
 import { extractDateParts } from 'src/utils/date';
+import { useAuthStore } from 'src/modules/auth/store';
+
+const authStore = useAuthStore();
 const tripStore = useTripStore();
 const router = useRouter();
 
@@ -148,6 +152,7 @@ const endDate = ref();
 const allDaysofTrip = ref<string[] | undefined>([]);
 const dayDiff = ref();
 const loadMoreDays = ref(false);
+const isAdmin = ref(false);
 
 onMounted(async () => {
   tripId.value = route.params.id as string;
@@ -164,6 +169,11 @@ onMounted(async () => {
   loadMoreDays.value = itineraryStore.itineraryDays.length < dayDiff.value;
   await fetchAllItineraryDays();
   await tripStore.fetchTrip(tripId.value);
+  if (tripStore.activeTrip?.roles?.length) {
+    isAdmin.value = tripStore.activeTrip.roles.some(
+      (r) => r.uid === authStore.profile!.uid && r.adminestrator === true,
+    );
+  }
 });
 
 async function onClickItineraryDay(val: string) {
@@ -234,12 +244,16 @@ function allDays() {
 
   return dates;
 }
+const dummyLoadingBtn = ref(false);
 async function addDummyDays() {
+  dummyLoadingBtn.value = true;
   for (const day of allDaysofTrip.value!) {
     await itineraryStore.createDay(tripId.value!, day);
   }
   loadMoreDays.value = false;
   await fetchAllItineraryDays();
+
+  dummyLoadingBtn.value = false;
 }
 const onPreview = () => {
   const url = router.resolve({

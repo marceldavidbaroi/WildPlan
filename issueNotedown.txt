@@ -1,9 +1,7 @@
 
 
 main branch 
-if the link of the image is not image it breaks and all the actions gone - solution is to give the settings icon in the bottom action panel
 #itinerary issues
-add a loding effect when clicking itenary
 Quick Add Travel Days dont show this except the owner 
 dont show the actions of the itinerary if the user is not administrator 
 add a search to the add itinerary assign to dropdown 
