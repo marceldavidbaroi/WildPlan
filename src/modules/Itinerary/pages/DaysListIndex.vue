@@ -47,18 +47,20 @@
       <div>
         <div class="full-width row justify-end q-gutter-sm">
           <q-btn color="info" no-caps flat label="Preview" @click="onPreview" />
-          <q-btn color="negative" no-caps label="Delete All" @click="onDeleteAll" />
-          <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
-          <q-btn
-            color="primary"
-            no-caps
-            label="Add Event"
-            @click="
-              {
-                (showAddDialog = true), (isEdit = false);
-              }
-            "
-          />
+          <div v-if="isAdmin" class="q-gutter-sm">
+            <q-btn color="negative" no-caps label="Delete All" @click="onDeleteAll" />
+            <q-btn color="primary" no-caps label="Make Schedule" @click="onScheduleClick" />
+            <q-btn
+              color="primary"
+              no-caps
+              label="Add Event"
+              @click="
+                {
+                  (showAddDialog = true), (isEdit = false);
+                }
+              "
+            />
+          </div>
         </div>
 
         <AddEventDialog
@@ -180,6 +182,7 @@ const selectedEvent = ref();
 const btnLoading = ref<boolean>(false);
 const loading = ref<boolean>(false);
 const packingItems = ref();
+const isAdmin = ref(false);
 
 const userOptions = ref();
 const categoryOptions = Object.values(ItineraryEventCategory);
@@ -244,7 +247,7 @@ onMounted(async () => {
   tripId.value = route.params.id as string;
   itineraryDay.value = route.params.dayId as string;
 
-  const res = await itineraryStore.getDay(tripId.value, itineraryDay.value);
+  await itineraryStore.getDay(tripId.value, itineraryDay.value);
   await tripStore.fetchTrip(tripId.value);
   await authStore.fetchAllUser();
 
@@ -257,7 +260,11 @@ onMounted(async () => {
   date.value = extractDateParts(itineraryStore.selectedDay!.id);
   await packingStore.getPackingItems({ tripId: tripId.value });
   packingItems.value = packingStore.items.filter((item) => item.type === 'shared');
-
+  if (tripStore.activeTrip?.roles?.length) {
+    isAdmin.value = tripStore.activeTrip.roles.some(
+      (r) => r.uid === authStore.profile!.uid && r.adminestrator === true,
+    );
+  }
   loading.value = false;
 });
 

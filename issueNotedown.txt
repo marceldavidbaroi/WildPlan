@@ -2,8 +2,6 @@
 
 main branch 
 #itinerary issues
-Quick Add Travel Days dont show this except the owner 
-dont show the actions of the itinerary if the user is not administrator 
 add a search to the add itinerary assign to dropdown 
 when add event is used disable the make schedule and vice versa
 there is a massive issue with the schedular the time is not right -critical
