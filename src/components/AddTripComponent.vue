@@ -61,7 +61,8 @@
             </template>
           </q-input> -->
 
-          <!-- Members --><q-select
+          <!-- Members -->
+          <q-select
             v-model="form.members"
             label="Members"
             filled
@@ -70,13 +71,14 @@
             use-input
             input-debounce="300"
             new-value-mode="add"
-            hint="select member "
-            :options="allusers"
+            hint="Select member"
+            :options="options"
             option-label="email"
             option-value="uid"
             map-options
             emit-value
             clearable
+            @filter="filterMembers"
           >
             <template #prepend>
               <q-icon name="group" />
@@ -210,5 +212,23 @@ function submitForm() {
 
   emits('submit', payload);
   closeDialog();
+}
+
+// Options for the select (filtered)
+const options = ref<UserProfile[]>([...props.allusers]);
+
+// Filter method
+function filterMembers(val: string, update: (callback: () => void) => void) {
+  if (val === '') {
+    update(() => {
+      options.value = props.allusers;
+    });
+    return;
+  }
+
+  const needle = val.toLowerCase();
+  update(() => {
+    options.value = props.allusers.filter((user) => user.email!.toLowerCase().includes(needle));
+  });
 }
 </script>
