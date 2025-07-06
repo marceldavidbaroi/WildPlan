@@ -36,66 +36,32 @@
     <!-- Scrollable Time Grid -->
     <div class="scroll-area q-mt-md" :class="isDarkMode ? 'text-white' : 'text-black'">
       <div v-if="!loading" class="row q-col-gutter-md">
-        <!-- AM -->
-        <div class="col-12 col-md-6">
+        <div class="col-12">
           <q-card flat bordered class="q-pa-sm">
-            <div class="text-subtitle2 q-mb-sm">AM</div>
-            <div v-for="hour in 12" :key="'am-' + hour" class="q-mb-xs">
+            <div class="text-subtitle2 q-mb-sm">Day Schedule</div>
+            <div v-for="h in 24" :key="h" class="q-mb-xs">
               <div class="row items-center">
-                <div class="col-2 text-center text-caption text-bold">{{ hour }} AM</div>
+                <div class="col-2 text-center text-caption text-bold">{{ formatHourLabel(h) }}</div>
                 <div class="col-10 row q-col-gutter-xs">
                   <div
-                    v-for="quarter in 4"
-                    :key="'am-' + hour + '-' + quarter"
+                    v-for="q in 4"
+                    :key="`${h}-${q}`"
                     class="col-3 interval-box"
                     :class="{
-                      selected: isSelected('am', hour - 1, quarter - 1),
-                      hasEvent: hasEvent('am', hour - 1, quarter - 1),
+                      selected: isSelected(getPeriod(h), getHour(h), q - 1),
+                      hasEvent: hasEvent(getPeriod(h), getHour(h), q - 1),
                     }"
-                    :style="getBlockStyle('am', hour - 1, quarter - 1)"
-                    @click="toggleSelection('am', hour - 1, quarter - 1)"
-                  >
-                    <span class="event-label"
-                      ><q-icon
-                        v-if="getBlockEventName('am', hour - 1, quarter - 1)"
-                        :name="getCategoryIcon(getBlockEventType('am', hour - 1, quarter - 1))"
-                        size="sm"
-                      />{{ getBlockEventName('am', hour - 1, quarter - 1) }}</span
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
-          </q-card>
-        </div>
-
-        <!-- PM -->
-        <div class="col-12 col-md-6">
-          <q-card flat bordered class="q-pa-sm">
-            <div class="text-subtitle2 q-mb-sm">PM</div>
-            <div v-for="hour in 12" :key="'pm-' + hour" class="q-mb-xs">
-              <div class="row items-center">
-                <div class="col-2 text-center text-caption text-bold">{{ hour }} PM</div>
-                <div class="col-10 row q-col-gutter-xs">
-                  <div
-                    v-for="quarter in 4"
-                    :key="'pm-' + hour + '-' + quarter"
-                    class="col-3 interval-box"
-                    :class="{
-                      selected: isSelected('pm', hour - 1, quarter - 1),
-                      hasEvent: hasEvent('pm', hour - 1, quarter - 1),
-                    }"
-                    :style="getBlockStyle('pm', hour - 1, quarter - 1)"
-                    @click="toggleSelection('pm', hour - 1, quarter - 1)"
+                    :style="getBlockStyle(getPeriod(h), getHour(h), q - 1)"
+                    @click="toggleSelection(getPeriod(h), getHour(h), q - 1)"
                   >
                     <span class="event-label">
                       <q-icon
-                        v-if="getBlockEventName('pm', hour - 1, quarter - 1)"
-                        :name="getCategoryIcon(getBlockEventType('pm', hour - 1, quarter - 1))"
+                        v-if="getBlockEventName(getPeriod(h), getHour(h), q - 1)"
+                        :name="getCategoryIcon(getBlockEventType(getPeriod(h), getHour(h), q - 1))"
                         size="sm"
                       />
-                      {{ getBlockEventName('pm', hour - 1, quarter - 1) }}</span
-                    >
+                      {{ getBlockEventName(getPeriod(h), getHour(h), q - 1) }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -353,18 +319,27 @@ const getBlockEventType = (p: Period, h: number, q: number) => {
 };
 
 const blockToTimeString = (block: BlockKey, isEnd = false): string => {
-  let hour = block.hour === 0 ? 12 : block.hour;
+  let hour = block.hour + 1; // display hour (1–12)
   let minute = block.quarter * 15;
-  let suffix = block.period.toUpperCase();
+  let suffix = block.period.toUpperCase(); // AM or PM
 
   if (isEnd) {
     minute += 15;
     if (minute === 60) {
       minute = 0;
       hour += 1;
-      if (hour === 12) suffix = suffix === 'AM' ? 'PM' : 'AM';
-      else if (hour > 12) hour = 1;
+
+      if (hour === 12) {
+        suffix = suffix === 'AM' ? 'PM' : 'AM';
+      } else if (hour === 13) {
+        hour = 1;
+      }
     }
+  }
+
+  // Handle hour 12 wraparound
+  if (hour === 12 && isEnd && minute === 0) {
+    suffix = suffix === 'AM' ? 'PM' : 'AM';
   }
 
   return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${suffix}`;
@@ -373,8 +348,10 @@ const blockToTimeString = (block: BlockKey, isEnd = false): string => {
 const parseTime = (t: string): number => {
   const [hhmm, suffix] = t.split(' ');
   let [h, m] = hhmm.split(':').map(Number);
+
   if (suffix === 'PM' && h !== 12) h += 12;
   if (suffix === 'AM' && h === 12) h = 0;
+
   return h * 60 + m;
 };
 
@@ -483,6 +460,14 @@ async function handleConfirmAll() {
 function handleCancelAll() {
   showDeleteAllDialog.value = false;
 }
+
+const getPeriod = (h: number): Period => (h < 12 ? 'am' : 'pm');
+const getHour = (h: number): number => h % 12; // hour 0 → 0, 13 → 1
+const formatHourLabel = (h: number): string => {
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  const suffix = h < 12 ? 'AM' : 'PM';
+  return `${hour} ${suffix}`;
+};
 </script>
 
 <style scoped>
