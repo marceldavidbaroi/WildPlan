@@ -2,7 +2,6 @@
 
 main branch 
 #itinerary issues
-there is a massive issue with the schedular the time is not right -critical
 add a loading statre for the preview of the itinerary
 add a loading state for the edit itinerary
 add a loading state to the all itinerary preview

@@ -3,54 +3,64 @@
     <div class="row items-center justify-between q-mb-md">
       <div>
         <h2 class="text-h5 text-primary">Trip Plan for {{ formattedDate }}</h2>
-        <p class="text-caption text-grey-7">Trip ID: {{ events?.tripId || 'Loading...' }}</p>
+        <p class="text-caption text-primary">
+          Trip name: {{ tripStore.activeTrip?.name || 'Loading...' }}
+        </p>
       </div>
-      <q-btn label="Print" icon="print" color="primary" @click="printPage" />
+      <q-btn class="no-print" label="Print" icon="print" color="primary" @click="printPage" />
     </div>
 
-    <q-card flat bordered class="q-pa-md q-mb-md">
-      <q-card-section>
-        <div><strong>Daily Notes:</strong> {{ events?.dailyNotes || 'None' }}</div>
-      </q-card-section>
-    </q-card>
+    <!-- Loading spinner -->
+    <div v-if="loading" class="flex flex-center q-my-xl">
+      <q-spinner-ball size="50px" color="primary" />
+    </div>
 
-    <q-card flat bordered class="q-pa-md">
-      <q-card-section>
-        <div class="events-columns">
-          <div
-            v-for="(event, index) in events?.events || []"
-            :key="index"
-            class="event-section q-mb-md"
-          >
-            <div class="event-header q-pa-xs">
-              <input
-                type="checkbox"
-                :checked="event.isCompleted"
-                disabled
-                class="status-checkbox"
-                title="Completed status"
-                style="margin-right: 10px; vertical-align: middle"
-              />
-              Event {{ index + 1 }}
+    <!-- Main content only shows when NOT loading -->
+    <div v-else>
+      <q-card flat bordered class="q-pa-md q-mb-md">
+        <q-card-section>
+          <div><strong>Daily Notes:</strong> {{ events?.dailyNotes || 'None' }}</div>
+        </q-card-section>
+      </q-card>
+
+      <q-card flat bordered class="q-pa-md">
+        <q-card-section>
+          <div class="events-columns">
+            <div
+              v-for="(event, index) in events?.events || []"
+              :key="index"
+              class="event-section q-mb-md"
+            >
+              <div class="event-header q-pa-xs">
+                <input
+                  type="checkbox"
+                  :checked="event.isCompleted"
+                  disabled
+                  class="status-checkbox"
+                  title="Completed status"
+                  style="margin-right: 10px; vertical-align: middle"
+                />
+                Event {{ index + 1 }}
+              </div>
+              <ul class="styled-list">
+                <li><strong>Time:</strong> {{ event.startTime }} - {{ event.endTime }}</li>
+                <li><strong>Assigned To:</strong> {{ event.assignedTo.join(', ') }}</li>
+                <li v-if="event.category"><strong>Category:</strong> {{ event.category }}</li>
+                <li v-if="event.address"><strong>Address:</strong> {{ event.address }}</li>
+                <li v-if="event.notes"><strong>Notes:</strong> {{ event.notes }}</li>
+                <li v-if="event.budgetImpact">
+                  <strong>Budget:</strong> +{{ event.budgetImpact.amount }}
+                  {{ event.budgetImpact.currency }}
+                </li>
+              </ul>
             </div>
-            <ul class="styled-list">
-              <li><strong>Time:</strong> {{ event.startTime }} - {{ event.endTime }}</li>
-              <li><strong>Assigned To:</strong> {{ event.assignedTo.join(', ') }}</li>
-              <li v-if="event.category"><strong>Category:</strong> {{ event.category }}</li>
-              <li v-if="event.address"><strong>Address:</strong> {{ event.address }}</li>
-              <li v-if="event.notes"><strong>Notes:</strong> {{ event.notes }}</li>
-              <li v-if="event.budgetImpact">
-                <strong>Budget:</strong> +{{ event.budgetImpact.amount }}
-                {{ event.budgetImpact.currency }}
-              </li>
-            </ul>
+            <div v-if="!events?.events || events.events.length === 0" class="text-grey-6">
+              No events available.
+            </div>
           </div>
-          <div v-if="!events?.events || events.events.length === 0" class="text-grey-6">
-            No events available.
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
+        </q-card-section>
+      </q-card>
+    </div>
   </q-page>
 </template>
 
@@ -59,6 +69,8 @@ import { computed, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useItineraryStore } from '../store';
 import { useRoute } from 'vue-router';
+import { useTripStore } from 'src/modules/trip/store';
+const tripStore = useTripStore();
 
 interface BudgetImpact {
   amount: number;
@@ -93,6 +105,7 @@ const $q = useQuasar();
 const events = ref<Plan | null>(null);
 const tripId = ref<string | null>(null);
 const date = ref<string | null>(null);
+const loading = ref(true); // <-- loading state
 
 onMounted(async () => {
   $q.dark.set(false);
@@ -100,8 +113,16 @@ onMounted(async () => {
   date.value = route.query.date as string;
 
   if (tripId.value && date.value) {
-    const response = await itineraryStore.getDay(tripId.value, date.value);
-    events.value = response.data;
+    loading.value = true;
+    try {
+      const response = await itineraryStore.getDay(tripId.value, date.value);
+      events.value = response.data;
+      await getTripDetails(response.data?.tripId ?? '');
+    } finally {
+      loading.value = false;
+    }
+  } else {
+    loading.value = false;
   }
 });
 
@@ -116,6 +137,9 @@ const formattedDate = computed(() => {
 
 function printPage() {
   window.print();
+}
+async function getTripDetails(tripId: string) {
+  await tripStore.fetchTrip(tripId);
 }
 </script>
 
