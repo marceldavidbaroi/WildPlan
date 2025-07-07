@@ -54,14 +54,18 @@
                     :style="getBlockStyle(getPeriod(h), getHour(h), q - 1)"
                     @click="toggleSelection(getPeriod(h), getHour(h), q - 1)"
                   >
-                    <span class="event-label">
-                      <q-icon
-                        v-if="getBlockEventName(getPeriod(h), getHour(h), q - 1)"
-                        :name="getCategoryIcon(getBlockEventType(getPeriod(h), getHour(h), q - 1))"
-                        size="sm"
-                      />
-                      {{ getBlockEventName(getPeriod(h), getHour(h), q - 1) }}
-                    </span>
+                    <div
+                      class="event-label"
+                      v-for="event in getBlockEvents(getPeriod(h), getHour(h), q - 1)"
+                      :key="event.id"
+                      style="display: flex; align-items: center; margin-bottom: 2px"
+                    >
+                      <q-icon :name="getCategoryIcon(event.category)" size="sm" class="q-mr-xs" />
+                      <span
+                        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+                        >{{ event.name }}</span
+                      >
+                    </div>
                   </div>
                 </div>
               </div>
@@ -81,6 +85,12 @@
           <div class="text-h6">{{ isEditMode ? 'Edit Event' : 'Add Event' }}</div>
           <q-input v-model="eventName" label="Event Name" autofocus />
           <q-select v-model="eventType" :options="eventTypeOption" label="Standard" filled />
+
+          <!-- Add Start and End Time display -->
+          <div class="q-mt-md">
+            <div><strong>Start Time:</strong> {{ startTimeDisplay }}</div>
+            <div><strong>End Time:</strong> {{ endTimeDisplay }}</div>
+          </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" @click="cancelEvent" />
@@ -100,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Notify, useQuasar } from 'quasar';
 import { useRoute, useRouter } from 'vue-router';
 import { ItineraryEventCategory } from '../store/types';
@@ -139,12 +149,24 @@ interface BlockKey {
   hour: number;
   quarter: number;
 }
-interface ScheduledEvent {
-  name: string;
-  startTime: string;
-  endTime: string;
-  category: string;
-}
+
+const startTimeDisplay = computed(() => {
+  if (selectedBlocks.value.length === 0) return '-';
+  const sorted = [...selectedBlocks.value].sort(compareBlock);
+  if (sorted.length === 0) return '-'; // extra safety check
+  const firstBlock = sorted[0];
+  if (!firstBlock) return '-';
+  return blockToTimeString(firstBlock);
+});
+
+const endTimeDisplay = computed(() => {
+  if (selectedBlocks.value.length === 0) return '-';
+  const sorted = [...selectedBlocks.value].sort(compareBlock);
+  if (sorted.length === 0) return '-'; // extra safety check
+  const lastBlock = sorted[sorted.length - 1];
+  if (!lastBlock) return '-';
+  return blockToTimeString(lastBlock, true);
+});
 
 const selectedBlocks = ref<BlockKey[]>([]);
 const eventName = ref('');
@@ -191,48 +213,16 @@ function deepMergeDefaults(target: any, defaults: any): any {
   return target ?? defaults;
 }
 
-const getEventBlocks = (event: NewItineraryEvent): BlockKey[] => {
-  const blocks: BlockKey[] = [];
-
-  for (const period of ['am', 'pm'] as Period[]) {
-    for (let hour = 0; hour < 12; hour++) {
-      for (let quarter = 0; quarter < 4; quarter++) {
-        const block = { period, hour, quarter };
-        const timeStr = blockToTimeString(block);
-        if (isTimeInRange(timeStr, event.startTime, event.endTime)) {
-          blocks.push(block);
-        }
-      }
-    }
-  }
-
-  return blocks;
-};
-
 const toggleSelection = (period: Period, hour: number, quarter: number) => {
-  const time = blockToTimeString({ period, hour, quarter });
-  const eventIndex = events.value.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
-
-  if (eventIndex !== -1) {
-    // Prefill dialog with existing event
-    const event = events.value[eventIndex];
-    selectedEvent.value = event;
-    eventName.value = event.name;
-    eventType.value = event.category;
-    isEditMode.value = true;
-    editingEventIndex.value = eventIndex;
-    selectedBlocks.value = getEventBlocks(event); // helper function below
-    showDialog.value = true;
-    return;
-  }
-
-  // Normal toggle behavior
   const index = selectedBlocks.value.findIndex(
     (b) => b.period === period && b.hour === hour && b.quarter === quarter,
   );
   if (index >= 0) {
     selectedBlocks.value.splice(index, 1);
   } else {
+    if (selectedBlocks.value.length >= 2) {
+      selectedBlocks.value.shift(); // remove the first
+    }
     selectedBlocks.value.push({ period, hour, quarter });
   }
 };
@@ -259,6 +249,7 @@ const saveEvent = async () => {
     endTime: blockToTimeString(last, true),
     category: eventType.value,
   };
+
   const EditEvent: ItineraryEvent = {
     ...selectedEvent.value,
     name: eventName.value,
@@ -270,12 +261,7 @@ const saveEvent = async () => {
   if (isEditMode.value && editingEventIndex.value !== null) {
     const safeEvent = deepMergeDefaults(EditEvent, defaultEvent);
 
-    const responseq = await itineraryStore.editEventById(
-      tripId.value,
-      date.value,
-      EditEvent.id,
-      safeEvent,
-    );
+    await itineraryStore.editEventById(tripId.value, date.value, EditEvent.id, safeEvent);
     const response = await itineraryStore.getDay(tripId.value, date.value);
     events.value = response.data?.events ?? [];
   } else {
@@ -319,9 +305,9 @@ const getBlockEventType = (p: Period, h: number, q: number) => {
 };
 
 const blockToTimeString = (block: BlockKey, isEnd = false): string => {
-  let hour = block.hour + 1; // display hour (1–12)
+  let hour = block.hour === 0 ? 12 : block.hour; // handle 0 as 12
   let minute = block.quarter * 15;
-  let suffix = block.period.toUpperCase(); // AM or PM
+  let suffix = block.period.toUpperCase();
 
   if (isEnd) {
     minute += 15;
@@ -335,11 +321,6 @@ const blockToTimeString = (block: BlockKey, isEnd = false): string => {
         hour = 1;
       }
     }
-  }
-
-  // Handle hour 12 wraparound
-  if (hour === 12 && isEnd && minute === 0) {
-    suffix = suffix === 'AM' ? 'PM' : 'AM';
   }
 
   return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${suffix}`;
@@ -398,7 +379,7 @@ const darkModeEventColors = [
 
 const getBlockStyle = (p: Period, h: number, q: number) => {
   const time = blockToTimeString({ period: p, hour: h, quarter: q });
-  const eventIndex = events.value.findIndex((e) => isTimeInRange(time, e.startTime, e.endTime));
+  const eventIndex = events.value.findIndex((e) => isTimeInRange(time, e.startTime!, e.endTime!));
   if (eventIndex !== -1) {
     let eventColors = null;
     if (isDarkMode.value) {
@@ -467,6 +448,11 @@ const formatHourLabel = (h: number): string => {
   const hour = h % 12 === 0 ? 12 : h % 12;
   const suffix = h < 12 ? 'AM' : 'PM';
   return `${hour} ${suffix}`;
+};
+
+const getBlockEvents = (p: Period, h: number, q: number) => {
+  const time = blockToTimeString({ period: p, hour: h, quarter: q });
+  return events.value.filter((e) => isTimeInRange(time, e.startTime!, e.endTime!));
 };
 </script>
 
