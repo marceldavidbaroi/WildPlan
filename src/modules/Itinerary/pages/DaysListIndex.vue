@@ -126,7 +126,7 @@
         <div v-else>
           <div v-for="event in itineraryStore.selectedDay?.events" :key="event.id">
             <div class="shadow-1 q-my-sm q-pa-md" style="border-radius: 12px">
-              <div class="row justify-between">
+              <div v-if="!editLoading" class="row justify-between">
                 <div @click="onDetailsClick(event)" style="cursor: pointer">
                   <q-icon :name="getCategoryIcon(event.category)" class="q-mr-sm" />
                   <span class="text-bold"
@@ -156,6 +156,9 @@
                     @click="onDelete(event)"
                   />
                 </div>
+              </div>
+              <div v-else class="flex flex-center">
+                <q-spinner-bars size="sm" color="primary" />
               </div>
             </div>
           </div>
@@ -226,6 +229,7 @@ const btnLoading = ref<boolean>(false);
 const loading = ref<boolean>(false);
 const packingItems = ref();
 const isAdmin = ref(false);
+const editLoading = ref(false);
 
 const userOptions = ref();
 const categoryOptions = Object.values(ItineraryEventCategory);
@@ -338,12 +342,14 @@ function getCategoryIcon(category: string): string {
 async function handleSubmit(val: NewItineraryEvent) {
   let response = null;
   if (isEdit.value) {
+    editLoading.value = true;
     response = await itineraryStore.editEventById(
       tripId.value!,
       itineraryStore.selectedDay!.id,
       selectedEventId.value,
       val,
     );
+    editLoading.value = false;
   } else {
     response = await itineraryStore.addEvent(tripId.value!, itineraryStore.selectedDay!.id, val);
   }
