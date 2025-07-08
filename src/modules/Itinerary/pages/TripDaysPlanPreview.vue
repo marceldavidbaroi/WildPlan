@@ -1,47 +1,64 @@
 <template>
   <q-page class="print-preview q-pa-md">
     <!-- Print Button -->
-    <div class="q-mb-md no-print">
+    <div class="q-mb-md no-print row justify-end">
       <q-btn label="Print Trip Plan" icon="print" color="primary" @click="printPage" />
     </div>
 
-    <!-- Trip Preview Content -->
-    <div class="trip-container" v-if="data && data.length">
-      <div v-for="(day, index) in data" :key="day.id" class="day-section q-mb-xl">
-        <h2 class="day-title">Day {{ index + 1 }} – {{ formatDate(day.date) }}</h2>
-
-        <!-- Notes -->
-        <div v-if="day.dailyNotes" class="q-mb-md">
-          <strong>Notes:</strong>
-          <p>{{ day.dailyNotes }}</p>
-        </div>
-
-        <!-- Events -->
-        <div v-if="day.events && day.events.length" class="events-grid">
-          <div v-for="(event, eIndex) in day.events" :key="event.id || eIndex" class="event-block">
-            <p class="event-title">📌 {{ event.name || 'Untitled Event' }}</p>
-            <p class="event-time">🕒 {{ event.startTime }} - {{ event.endTime }}</p>
-            <p v-if="event.locationName && event.locationName.trim()">
-              📍 Location: {{ event.locationName }}
-            </p>
-            <p v-if="event.description && event.description.trim()">📝 {{ event.description }}</p>
-            <p v-if="event.notes && event.notes.trim()">🗒️ Notes: {{ event.notes }}</p>
-            <p v-if="event.budgetImpact?.estimatedCost > 0">
-              💰 Estimated Cost: {{ event.budgetImpact.estimatedCost }} BDT
-            </p>
-            <p v-if="event.assignedTo && event.assignedTo.length">
-              👥 Assigned To:
-              <span v-for="(uid, i) in event.assignedTo" :key="uid">
-                {{ findUser(uid)?.displayName || 'Unknown'
-                }}<span v-if="i < event.assignedTo.length - 1">, </span>
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
+    <!-- Loader -->
+    <div v-if="loading" class="text-center q-mt-xl">
+      <q-spinner-ball size="50px" color="primary" />
+      <p class="q-mt-md">Loading trip plan...</p>
     </div>
 
-    <div v-else class="text-center q-pa-md">No trip data found.</div>
+    <!-- Trip Preview Content -->
+    <div v-else>
+      <div v-if="data && data.length" class="trip-container">
+        <div v-for="(day, index) in data" :key="day.id" class="day-section q-mb-xl">
+          <h2 class="day-title">Day {{ index + 1 }} – {{ formatDate(day.date) }}</h2>
+
+          <!-- Notes -->
+          <div v-if="day.dailyNotes && day.dailyNotes.trim()" class="q-mb-md">
+            <strong>Notes:</strong>
+            <p>{{ day.dailyNotes }}</p>
+          </div>
+
+          <!-- Events -->
+          <div v-if="day.events && day.events.length" class="events-grid">
+            <div
+              v-for="(event, eIndex) in day.events"
+              :key="event.id || eIndex"
+              class="event-block"
+            >
+              <p class="event-title">📌 {{ event.name || 'Untitled Event' }}</p>
+              <p class="event-time">🕒 {{ event.startTime }} - {{ event.endTime }}</p>
+              <p v-if="event.locationName && event.locationName.trim()">
+                📍 Location: {{ event.locationName }}
+              </p>
+              <p v-if="event.description && event.description.trim()">📝 {{ event.description }}</p>
+              <p v-if="event.notes && event.notes.trim()">🗒️ Notes: {{ event.notes }}</p>
+              <p v-if="event.budgetImpact?.estimatedCost > 0">
+                💰 Estimated Cost: {{ event.budgetImpact.estimatedCost }} BDT
+              </p>
+              <p v-if="event.assignedTo && event.assignedTo.length">
+                👥 Assigned To:
+                <span v-for="(uid, i) in event.assignedTo" :key="uid">
+                  {{ findUser(uid)?.displayName || 'Unknown'
+                  }}<span v-if="i < event.assignedTo.length - 1">, </span>
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <!-- No events message -->
+          <div v-else class="text-subtitle2 text-grey">No events scheduled for this day.</div>
+        </div>
+      </div>
+
+      <div v-else class="text-center q-pa-md">
+        <p>No trip data found.</p>
+      </div>
+    </div>
   </q-page>
 </template>
 
@@ -54,14 +71,22 @@ import { useAuthStore } from 'src/modules/auth/store';
 const itineraryStore = useItineraryStore();
 const authStore = useAuthStore();
 const route = useRoute();
+
 const tripId = ref<string>();
 const data = ref<any[]>([]);
+const loading = ref<boolean>(true);
 
 onMounted(async () => {
   tripId.value = route.query.tripId as string;
-  const response = await itineraryStore.getAllDays(tripId.value);
-  await authStore.fetchAllUser();
-  data.value = response.data ?? [];
+  try {
+    const response = await itineraryStore.getAllDays(tripId.value);
+    await authStore.fetchAllUser();
+    data.value = response.data ?? [];
+  } catch (error) {
+    console.error('Failed to load trip data:', error);
+  } finally {
+    loading.value = false;
+  }
 });
 
 const formatDate = (dateStr: string) => {
@@ -92,7 +117,6 @@ const findUser = (id: string) => {
   padding: 2rem;
 }
 
-/* Hide the print button during printing */
 @media print {
   .no-print {
     display: none !important;

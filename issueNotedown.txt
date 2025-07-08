@@ -1,8 +1,6 @@
 
 
-main branch 
-#itinerary issues
-add a loading state to the all itinerary preview
+
 
 
 #task
