@@ -24,6 +24,7 @@
                   :class="calculateDueDateStatus(task.dueDate!).statusColor"
                   size="sm"
                   :label="calculateDueDateStatus(task.dueDate!).status"
+                  style="width: fit-content"
                 />
               </div>
               <div v-if="task?.assignedTo?.length" class="avatar-overlap">
@@ -63,6 +64,7 @@
                   :class="calculateDueDateStatus(task.dueDate!).statusColor"
                   size="sm"
                   :label="calculateDueDateStatus(task.dueDate!).status"
+                  style="width: fit-content"
                 />
               </div>
               <div v-if="task?.assignedTo?.length" class="avatar-overlap">
@@ -102,6 +104,7 @@
                   :class="calculateDueDateStatus(task.dueDate!).statusColor"
                   size="sm"
                   :label="calculateDueDateStatus(task.dueDate!).status"
+                  style="width: fit-content"
                 />
               </div>
               <div v-if="task?.assignedTo?.length" class="avatar-overlap">
@@ -225,7 +228,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Task, TaskStatus, TaskPriority } from '../store/types';
+import type { Task, TaskStatus, TaskPriority } from '../store/types';
 import { useTaskStore } from '../store';
 import { Notify } from 'quasar';
 
