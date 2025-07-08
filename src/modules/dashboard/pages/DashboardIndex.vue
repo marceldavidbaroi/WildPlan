@@ -11,6 +11,8 @@
           {{ currentDate }}
         </div>
       </div>
+      <TripPlanner />
+
       <!-- add trip button  -->
       <div class="row justify-end">
         <q-btn flat color="primary" icon="add" @click="onAddClick">
@@ -42,6 +44,7 @@ import { useTripStore } from '../../trip/store';
 import SwipeCard from '../components/SwipeCard.vue';
 import { useAuthStore } from 'src/modules/auth/store';
 import { Notify } from 'quasar';
+import TripPlanner from 'src/components/TripPlanner.vue';
 
 const authStore = useAuthStore();
 

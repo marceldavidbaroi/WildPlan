@@ -4,6 +4,8 @@ import type { Auth } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
+// import type { Functions } from 'firebase/functions';
+// import { getFunctions } from 'firebase/functions';
 
 // Define the shape of your Firebase config
 interface FirebaseConfig {
@@ -32,4 +34,7 @@ const app: FirebaseApp = initializeApp(firebaseConfig);
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
 // console.log('Firebase initialized with config:', firebaseConfig);
+
+// const functions: Functions = getFunctions(app);
+
 export { app, auth, db };

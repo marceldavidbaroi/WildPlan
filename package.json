@@ -16,7 +16,10 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",
+    "axios": "^1.10.0",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.4.0",
+    "firebase-functions": "^6.3.2",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.2.0",
     "pinia": "^3.0.1",
@@ -28,7 +31,8 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@quasar/app-vite": "^2.1.0",
-    "@types/node": "^20.5.9",
+    "@types/axios": "^0.9.36",
+    "@types/node": "^20.19.4",
     "@vue/eslint-config-prettier": "^10.1.0",
     "@vue/eslint-config-typescript": "^14.4.0",
     "autoprefixer": "^10.4.2",

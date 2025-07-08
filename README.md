@@ -175,3 +175,8 @@ We welcome contributions! If you're interested in helping us build the ultimate 
 
 This project is licensed under the [MIT License](LICENSE) (coming soon).
 ```
+
+note: ollama pull llama3
+open the ollama app
+in the power shell run ollama serve
+then quasar dev
