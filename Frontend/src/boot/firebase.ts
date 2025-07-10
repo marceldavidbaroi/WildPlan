@@ -36,5 +36,6 @@ const db: Firestore = getFirestore(app);
 // console.log('Firebase initialized with config:', firebaseConfig);
 
 // const functions: Functions = getFunctions(app);
+window.auth = auth;
 
 export { app, auth, db };

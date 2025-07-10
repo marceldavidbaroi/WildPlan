@@ -1,5 +1,6 @@
 <template>
   <q-page class="q-pa-md">
+    <AIChat/>
     <!-- Weather & Date Row -->
     <div v-if="!loading">
       <div class="row items-center justify-between q-mb-md">
@@ -45,6 +46,8 @@ import SwipeCard from '../components/SwipeCard.vue';
 import { useAuthStore } from 'src/modules/auth/store';
 import { Notify } from 'quasar';
 import TripPlanner from 'src/components/TripPlanner.vue';
+import AIChat from 'src/modules/ai/components/AIChat.vue';
+
 
 const authStore = useAuthStore();
 
