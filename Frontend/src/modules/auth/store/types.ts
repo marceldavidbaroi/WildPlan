@@ -38,6 +38,7 @@ export interface AuthState {
   allUsers: UserProfile[] | null | undefined;
   loading: boolean;
   initialized: boolean;
+  authToken:null | string;
 }
 
 export interface ServiceResponse<T = unknown> {

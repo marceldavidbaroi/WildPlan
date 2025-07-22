@@ -1,84 +1,186 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
-from app.auth import verify_token
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
+from app.auth import verify_token   
+from app.models import ChatSession, Message
 from app.crud import (
-    create_trip_pref, create_chat_session, save_message,
-    get_chat_session_by_id, get_recent_messages,
-    get_message_count, get_sessions_by_prefix
+    create_chat_session, get_chat_session_by_id,
+    get_sessions_by_prefix, get_recent_messages, get_message_count,
+    save_message,process_chat_message
 )
-from app.services.weather import get_lat_lon, get_weather
-from app.services.ollama import ollama_stream
-import uuid
-
+from sqlalchemy.future import select
+from sqlalchemy import delete, update
+from uuid import uuid4
 
 router = APIRouter()
-@router.post("/chat/{session_id}")
-async def chat(session_id: str, request: Request, db=Depends(get_db)):
+
+# --------------------------
+# Chat Session CRUD
+# --------------------------
+
+@router.post("/session")
+async def create_session(request: Request, db: AsyncSession = Depends(get_db)):
     uid = await verify_token(request)
-    body = await request.json()
-    user_msg = body.get("message")
-    location = body.get("location", "San Francisco")
-    mood = body.get("mood", "friendly")
-    style = body.get("style", "casual")
+    data = await request.json()
+    session_id = str(uuid4())
+    title = data.get("title", "Untitled Session")
+    mood = data.get("mood")
+    style = data.get("style")
 
-    # If client asks for a new session, generate a unique UUID for session_id
-    if session_id.lower() == "new":
-        session_id = str(uuid.uuid4())
-        session = None
-    else:
-        # Try to find existing session with this id & uid
-        session = await get_chat_session_by_id(db, session_id, uid)
+    session = await create_chat_session(db, uid, session_id, title, mood, style)
+    
+    return {
+        "session_id": session.id,
+        "created_at": session.created_at,
+        "title": session.title,
+        "mood": session.mood,
+        "style": session.style,
+        # add any other fields you want to return here
+    }
 
-    # If session doesn't exist, create one
+
+@router.get("/session/{id}")
+async def get_session(id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    session = await get_chat_session_by_id(db, id, uid)
     if not session:
-        lat, lon = await get_lat_lon(location)
-        weather = await get_weather(lat, lon)
-        pref = await create_trip_pref(db, uid, location, mood, style)
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {
+        "session_id": session.id,
+        "created_at": session.created_at,
+        "title": session.title,
+        "mood": session.mood,
+        "style": session.style,
+    }
 
-        try:
-            session = await create_chat_session(db, uid, pref.id, session_id=session_id)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to create session: {str(e)}")
 
-        await save_message(db, session.id, "user", user_msg)
-        intro = f"You are a {mood} assistant. Location: {location}. Weather: {weather}."
-    else:
-        count = await get_message_count(db, session_id)
-        if count >= 60:
-            return JSONResponse({"message": "This session has reached the 30-message limit. Please create a new session."}, status_code=403)
-        await save_message(db, session.id, "user", user_msg)
-        intro = ""
+@router.get("/session/user/{uid}")
+async def get_user_sessions(uid: str, request: Request, db: AsyncSession = Depends(get_db)):
+    _ = await verify_token(request)  # token check only
+    result = await db.execute(select(ChatSession).where(ChatSession.uid == uid))
+    sessions = result.scalars().all()
+    return [{
+        "session_id": s.id,
+        "created_at": s.created_at,
+        "title": s.title,
+        "mood": s.mood,
+        "style": s.style
+    } for s in sessions]
 
-    messages = await get_recent_messages(db, session.id, limit=30)
-    context = "\n".join([f"{m.role.capitalize()}: {m.content}" for m in messages])
-    prompt = f"{intro}\n{context}\nUser: {user_msg}\nAssistant:"
 
-    async def stream():
-        buffer = ""
-        print("⏳ Starting assistant response stream...", prompt)  # Server-side log
-        yield "[Assistant is typing...]\n"
-
-        async for chunk in ollama_stream(prompt):
-            buffer += chunk
-            yield chunk
-        await save_message(db, session.id, "assistant", buffer.strip())
-        print("✅ Assistant response complete and saved.")
-
-    return StreamingResponse(stream(), media_type="text/plain")
-
-@router.get("/chat/history/{prefix}")
-async def get_chat_history(prefix: str, request: Request, db=Depends(get_db)):
+@router.delete("/session/{id}")
+async def delete_session(id: str, request: Request, db: AsyncSession = Depends(get_db)):
     uid = await verify_token(request)
-    sessions = await get_sessions_by_prefix(db, prefix, uid)
-    history = []
+    session = await get_chat_session_by_id(db, id, uid)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    await db.execute(delete(ChatSession).where(ChatSession.id == id))
+    await db.commit()
+    return {"message": "Session deleted"}
 
-    for session in sessions:
-        messages = await get_recent_messages(db, session.id, limit=1000)
-        history.append({
-            "session_id": str(session.id),
-            "started_at": session.started_at,
-            "messages": [{"role": m.role, "content": m.content, "created_at": m.created_at} for m in messages]
-        })
 
-    return {"sessions": history}
+@router.patch("/session/{id}")
+async def update_session(id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    session = await get_chat_session_by_id(db, id, uid)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    data = await request.json()
+    stmt = update(ChatSession).where(ChatSession.id == id).values(
+        title=data.get("title", session.title),
+        mood=data.get("mood", session.mood),
+        style=data.get("style", session.style),
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"message": "Session updated"}
+
+
+# --------------------------
+# Message CRUD
+# --------------------------
+
+@router.post("/message")
+async def add_message(request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    data = await request.json()
+    session_id = data["session_id"]
+    role = data["role"]
+    content = data["content"]
+
+    session = await get_chat_session_by_id(db, session_id, uid)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    msg = await save_message(db, session_id, role, content)
+    return {"message_id": msg.id, "created_at": msg.created_at}
+
+
+@router.get("/message/session/{session_id}")
+async def get_messages(session_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    session = await get_chat_session_by_id(db, session_id, uid)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    messages = await get_recent_messages(db, session_id, limit=1000)
+    return [{
+        "id": m.id,
+        "role": m.role,
+        "content": m.content,
+        "created_at": m.created_at
+    } for m in messages]
+
+
+@router.delete("/message/{id}")
+async def delete_message(id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    result = await db.execute(select(Message).where(Message.id == id))
+    msg = result.scalar_one_or_none()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    # Optional: Add check that user owns the session
+    session = await get_chat_session_by_id(db, msg.session_id, uid)
+    if not session:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    await db.execute(delete(Message).where(Message.id == id))
+    await db.commit()
+    return {"message": "Message deleted"}
+
+
+@router.post("/chat")
+async def chat_entrypoint(request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    data = await request.json()
+    user_input = data.get("message")
+    session_id = data.get("session_id")  # Optional
+
+    if not user_input:
+        raise HTTPException(status_code=400, detail="No message provided")
+
+    assistant_text, final_session_id = await process_chat_message(db, session_id, user_input, uid)
+
+    return {
+        "reply": assistant_text,
+        "session_id": final_session_id
+    }
+
+
+
+@router.post("/chat/{session_id}")
+async def chat(session_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    uid = await verify_token(request)
+    data = await request.json()
+    user_input = data.get("message")
+
+    if not user_input:
+        raise HTTPException(status_code=400, detail="No message provided")
+
+    assistant_text, final_session_id = await process_chat_message(db, session_id, user_input, uid)
+
+    return {
+        "reply": assistant_text,
+        "session_id": final_session_id
+    }

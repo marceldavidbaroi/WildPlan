@@ -1,6 +1,7 @@
 import { useAuthStore } from 'src/modules/auth/store';
 
-export default () => {
+export default async () => {
   const authStore = useAuthStore();
-  authStore.initAuth();
+  await authStore.initAuth();
+  await authStore.getUserIdToken()
 };

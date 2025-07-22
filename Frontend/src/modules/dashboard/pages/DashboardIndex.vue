@@ -115,6 +115,7 @@ onMounted(async () => {
   userTrips.value = tripStore.trips.filter((trip) =>
     trip.involvedUsers.includes(authStore.profile!.uid),
   );
+  console.log(authStore.authToken)
   loading.value = false;
 });
 </script>

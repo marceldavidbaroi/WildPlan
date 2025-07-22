@@ -12,6 +12,7 @@ import {
 import { db } from 'src/boot/firebase';
 import type { UserProfile, ServiceResponse, FetchUserOptions } from '../store/types';
 import type { User } from 'firebase/auth';
+import { auth } from 'src/boot/firebase';
 
 export async function fetchUserProfile(user: User): Promise<{
   success: boolean;
@@ -161,4 +162,15 @@ export async function fetchAllUser(
       message: 'Failed to fetch users',
     };
   }
+}
+
+
+export async function getAuthToken(): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User is not authenticated.');
+  }
+
+  // Optionally force refresh: user.getIdToken(true)
+  return await user.getIdToken();
 }

@@ -201,3 +201,16 @@ export async function fetchAllUser(this: AuthState) {
   this.loading = false;
   return response;
 }
+
+export async function getUserIdToken(this: AuthState): Promise<string | null> {
+  if (!this.user) return null;
+
+  try {
+    const data = await this.user.getIdToken();
+    this.authToken=data
+    return data
+  } catch (error) {
+    console.error('Error fetching ID token:', error);
+    return null;
+  }
+}
