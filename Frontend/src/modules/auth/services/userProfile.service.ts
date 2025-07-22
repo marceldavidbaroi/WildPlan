@@ -14,6 +14,35 @@ import type { UserProfile, ServiceResponse, FetchUserOptions } from '../store/ty
 import type { User } from 'firebase/auth';
 import { auth } from 'src/boot/firebase';
 
+// Geolocation helper
+async function getUserGeolocation(): Promise<{
+  latitude: number;
+  longitude: number;
+}> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      return reject(new Error('Geolocation not supported by browser'));
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        reject(new Error(`Geolocation error: ${error.message}`));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  });
+}
+
 export async function fetchUserProfile(user: User): Promise<{
   success: boolean;
   profile: UserProfile | null;
@@ -24,7 +53,6 @@ export async function fetchUserProfile(user: User): Promise<{
     const userSnap = await getDoc(userDocRef);
 
     const providerInfo = user.providerData[0];
-
     const displayName = user.displayName ?? providerInfo?.displayName ?? null;
     const email = user.email ?? providerInfo?.email ?? null;
     const photoURL = user.photoURL ?? providerInfo?.photoURL ?? null;
@@ -42,6 +70,17 @@ export async function fetchUserProfile(user: User): Promise<{
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
+
+      try {
+        const location = await getUserGeolocation();
+        defaultProfile.location = {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          updatedAt: Date.now(),
+        };
+      } catch (geoErr) {
+        console.warn('[fetchUserProfile] Geolocation skipped:', geoErr.message);
+      }
 
       await setDoc(userDocRef, defaultProfile);
 
@@ -73,6 +112,19 @@ export async function fetchUserProfile(user: User): Promise<{
         photoURL: patchedProfile.photoURL,
         updatedAt: Date.now(),
       });
+    }
+
+    try {
+      const location = await getUserGeolocation();
+      await updateDoc(userDocRef, {
+        location: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          updatedAt: Date.now(),
+        },
+      });
+    } catch (geoErr) {
+      console.warn('[fetchUserProfile] Location update skipped:', geoErr.message);
     }
 
     return {
@@ -122,25 +174,19 @@ export async function fetchAllUser(
 ): Promise<ServiceResponse<UserProfile[]>> {
   try {
     const colRef = collection(db, 'users');
-
-    // Start building the query
     let q = query(colRef);
 
-    // Add sorting if requested
     if (options.sortBy) {
       q = query(q, orderBy(options.sortBy, options.sortDirection ?? 'asc'));
     }
 
-    // Execute query
     const snapshot = await getDocs(q);
 
-    // Map docs to UserProfile with id
     let users = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...(doc.data() as UserProfile),
     }));
 
-    // Filter by searchQuery on displayName or email (client-side filtering)
     if (options.searchQuery) {
       const lowerQuery = options.searchQuery.toLowerCase();
       users = users.filter(
@@ -164,13 +210,10 @@ export async function fetchAllUser(
   }
 }
 
-
 export async function getAuthToken(): Promise<string> {
   const user = auth.currentUser;
   if (!user) {
     throw new Error('User is not authenticated.');
   }
-
-  // Optionally force refresh: user.getIdToken(true)
   return await user.getIdToken();
 }

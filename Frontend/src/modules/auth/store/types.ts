@@ -15,12 +15,18 @@ export interface UserProfile {
   photoURL: string | null;
   address?: string | null | undefined;
 
+  // New Location Field
+  location?: {
+    latitude: number;
+    longitude: number;
+  } | null;
+
   // Trips
   joinedTrips?: string[] | null | undefined;
-  favouriteTrips?: string[] | null | undefined; // ⬅️ NEW
+  favouriteTrips?: string[] | null | undefined;
 
   // Contacts
-  contacts: Contact[] | null | undefined; // ⬅️ NEW
+  contacts: Contact[] | null | undefined;
 
   // Preferences
   preferences: {
@@ -31,6 +37,7 @@ export interface UserProfile {
   createdAt?: number | null | undefined;
   updatedAt?: number | null | undefined;
 }
+
 
 export interface AuthState {
   user: User | null;
