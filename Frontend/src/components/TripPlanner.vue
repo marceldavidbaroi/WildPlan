@@ -85,18 +85,34 @@ async function typeAI(text: string) {
 }
 
 async function askAI(prompt: string) {
-  const response = await fetch('http://localhost:11434/api/generate', {
+  const res = await fetch('http://localhost:8000/chat/87d97518-f313-4695-83f8-32cc5a65f330', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization:
+        'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQWthc2ggRGF2aWQiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJBR2QzdlZiN1ZBMWI5RzdZTGRUYy10a1VVeGJxYmxGaTkwdnpkZFp6bG1XS2F3PXM5Ni1jIiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3dpbGRwbGFuLWVlMDQwIiwiYXVkIjoid2lsZHBsYW4tZWUwNDAiLCJhdXRoX3RpbWUiOjE3NTUxNTk4MzksInVzZXJfaWQiOiJ2d2Q4Q3cyb1djT1daVXBwbGVDS05CTldkUXcxIiwic3ViIjoidndkOEN3Mm9XY09XWlVwcGxlQ0tOQk5XZFF3MSIsImlhdCI6MTc1NTI0ODI2NywiZXhwIjoxNzU1MjUxODY3LCJlbWFpbCI6ImFrYXNoZGF2aWQyMDAwQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imdvb2dsZS5jb20iOlsiMTE1NzI5NDQyMjk2Mjc5MDE4MDQxIl0sImVtYWlsIjpbImFrYXNoZGF2aWQyMDAwQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.YnfOpllsvWY5RUE02waIi6x8rndab1tN3TTXdJj9IvwrtIOAFq6QUohUcpxBne9ukvw3lQb1lzWOkRH4pytagLP6DiTDhUOnCJ3bgMo7co4c7_MTimdfKeystCDD3WyVdVIhasJFkcvYx1BGYucK_HcJKDa9jRzHxBAs50gKTM8fDDxjwwrb94W_24837Lq-QPSzXpZ1CB7IS3CGYnc95_Y-Gc5fpHsZrAmzT72d0Vi3mniRBB7wFwPcS3BCc4kbTGslkwBhjw18CTmWQSFpR_xHl4iEu6s0q0fNri-12NlApTZGbxoKePv74M6_KROsIZRJDv-uqWQVZ4ATJ0h05w',
+    },
     body: JSON.stringify({
-      model: 'llama3',
-      prompt,
-      stream: false,
+      message: prompt,
     }),
   });
-  const data = await response.json();
-  return data.response || 'Sorry, I have no answer.';
+
+  const data = await res.json();
+  return data.reply;
 }
+// async function askAI(prompt: string) {
+//   const response = await fetch('http://localhost:11434/api/generate', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({
+//       model: 'phi3',
+//       prompt,
+//       stream: false,
+//     }),
+//   });
+//   const data = await response.json();
+//   return data.response || 'Sorry, I have no answer.';
+// }
 
 function scrollToBottom() {
   nextTick(() => {

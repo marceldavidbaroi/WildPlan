@@ -155,16 +155,18 @@ async def chat_entrypoint(request: Request, db: AsyncSession = Depends(get_db)):
     uid = await verify_token(request)
     data = await request.json()
     user_input = data.get("message")
-    session_id = data.get("session_id")  # Optional
+    session_id = data.get("session_id")  # process_chat_message
 
     if not user_input:
         raise HTTPException(status_code=400, detail="No message provided")
 
-    assistant_text, final_session_id = await process_chat_message(db, session_id, user_input, uid)
+    assistant_text, final_session_id ,session_title= await process_chat_message(db, session_id, user_input, uid)
 
     return {
         "reply": assistant_text,
-        "session_id": final_session_id
+        "session_id": final_session_id,
+        "session_title": session_title
+
     }
 
 
@@ -178,9 +180,10 @@ async def chat(session_id: str, request: Request, db: AsyncSession = Depends(get
     if not user_input:
         raise HTTPException(status_code=400, detail="No message provided")
 
-    assistant_text, final_session_id = await process_chat_message(db, session_id, user_input, uid)
+    assistant_text, final_session_id,session_title = await process_chat_message(db, session_id, user_input, uid)
 
     return {
         "reply": assistant_text,
-        "session_id": final_session_id
+        "session_id": final_session_id,
+        "session_title": session_title
     }

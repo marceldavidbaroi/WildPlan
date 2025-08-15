@@ -1,5 +1,6 @@
 <template>
   <q-page class="q-pa-md">
+    <AIChat />
     <!-- Weather & Date Row -->
     <div v-if="!loading">
       <div class="row items-center justify-between q-mb-md">
@@ -11,7 +12,7 @@
           {{ currentDate }}
         </div>
       </div>
-      <TripPlanner />
+      <!-- <TripPlanner /> -->
 
       <!-- add trip button  -->
       <div class="row justify-end">
@@ -44,7 +45,8 @@ import { useTripStore } from '../../trip/store';
 import SwipeCard from '../components/SwipeCard.vue';
 import { useAuthStore } from 'src/modules/auth/store';
 import { Notify } from 'quasar';
-import TripPlanner from 'src/components/TripPlanner.vue';
+// import TripPlanner from 'src/components/TripPlanner.vue';
+import AIChat from 'src/modules/ai/components/AIChat.vue';
 
 const authStore = useAuthStore();
 
@@ -115,7 +117,7 @@ onMounted(async () => {
   userTrips.value = tripStore.trips.filter((trip) =>
     trip.involvedUsers.includes(authStore.profile!.uid),
   );
-  console.log(authStore.authToken)
+  console.log(authStore.authToken);
   loading.value = false;
 });
 </script>
